@@ -1,0 +1,1014 @@
+<meta charset="utf-8">
+<title>The Ticker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* ── The Ticker · single-theme warm editorial: espresso chrome, nude body ── */
+  :root{
+    --page:#efe5d8; --card:#faf5ee; --card2:#f1e8db; --card3:#e9ddcc;
+    --ink:#2b2119; --ink2:#6b5c4a; --muted:#8f7e69;
+    --grid:#e4d8c7; --border:rgba(59,42,28,.14); --border2:rgba(59,42,28,.28);
+    --up:#0e7a4a; --down:#bc3327; --up-dim:rgba(14,122,74,.12); --down-dim:rgba(188,51,39,.12);
+    --s1:#2a78d6; --s2:#eb6834; --band:rgba(59,42,28,.06);
+    --mast:#2c2015; --mast2:#3a2b1c; --mast-ink:#f8f2e9; --mast-ink2:#c9b8a2; --mast-border:rgba(248,242,233,.14);
+    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --brand:"Poppins",var(--sans);
+    --maxw:1120px; --r:10px;
+  }
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+  body{
+    background:var(--page); color:var(--ink); font-family:var(--sans);
+    font-size:15.5px; line-height:1.6; margin:0;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:rgba(42,120,214,.25)}
+
+  /* ── masthead (espresso chrome — the logo's home ground) ── */
+  .mast{background:linear-gradient(160deg,var(--mast2) 0%,var(--mast) 70%)}
+  .mast-in{max-width:var(--maxw); margin:0 auto; padding:34px 24px 22px; display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:18px}
+  .wordmark{display:flex; flex-direction:column; line-height:1}
+  .wordmark .the{font-family:var(--brand); font-weight:500; font-size:15px; letter-spacing:.52em; color:var(--mast-ink); margin:0 0 2px 6px}
+  .wordmark .tick{font-family:var(--brand); font-weight:800; font-size:64px; letter-spacing:-.02em; color:var(--mast-ink); display:flex; align-items:baseline; gap:14px}
+  .wordmark .tris{display:inline-flex; gap:7px; align-items:baseline}
+  .wordmark svg{display:block}
+  .mast-meta{text-align:right; font-family:var(--mono); font-size:12.5px; color:var(--mast-ink2)}
+  .mast-meta .tag{display:inline-block; border:1px solid var(--mast-border); border-radius:999px; padding:3px 12px; margin-bottom:8px; color:var(--mast-ink); font-size:11.5px; letter-spacing:.08em}
+  .mast-meta .asof b{color:var(--mast-ink); font-weight:600}
+
+  /* ── tape ── */
+  .tape{border-top:1px solid var(--mast-border); background:#241a11; overflow:hidden}
+  .tape-track{display:flex; gap:0; width:max-content; animation:tape 90s linear infinite}
+  .tape:hover .tape-track{animation-play-state:paused}
+  @media (prefers-reduced-motion:reduce){
+    .tape{overflow-x:auto} .tape-track{animation:none; width:auto}
+  }
+  @keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .tape-item{display:flex; align-items:center; gap:8px; padding:10px 22px; border-right:1px solid var(--mast-border); font-family:var(--mono); font-size:12.5px; white-space:nowrap}
+  .tape-item .tl{color:var(--mast-ink2); letter-spacing:.05em}
+  .tape-item .tv{color:var(--mast-ink); font-weight:600}
+  .tape .tri.up{border-bottom-color:#2fce85}
+  .tape .tri.dn{border-top-color:#ff6b5e}
+  .tape .tri.fl{background:var(--mast-ink2)}
+  .tri{width:0; height:0; display:inline-block}
+  .tri.up{border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:8px solid var(--up)}
+  .tri.dn{border-left:5px solid transparent; border-right:5px solid transparent; border-top:8px solid var(--down)}
+  .tri.fl{width:8px; height:2px; background:var(--muted); border:0}
+
+  /* ── nav ── */
+  .nav{position:sticky; top:0; z-index:40; background:rgba(44,32,21,.95); backdrop-filter:blur(10px); border-bottom:1px solid var(--mast-border)}
+  .nav-in{max-width:var(--maxw); margin:0 auto; padding:0 16px; display:flex; gap:2px; overflow-x:auto}
+  .nav a{color:var(--mast-ink2); text-decoration:none; font-size:13px; font-weight:500; padding:12px 13px; white-space:nowrap; border-bottom:2px solid transparent}
+  .nav a:hover{color:var(--mast-ink)}
+  .nav a:focus-visible{outline:2px solid var(--s1); outline-offset:-2px}
+
+  /* ── page scaffold ── */
+  main{max-width:var(--maxw); margin:0 auto; padding:12px 24px 60px}
+  /* group breakers — each information group opens with its own rule */
+  main > section{border-top:2px solid rgba(59,42,28,.18); margin-top:48px; padding-top:36px}
+  main > section:first-of-type{border-top:0; margin-top:0; padding-top:32px}
+  .sec-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:6px}
+  .sec-head h2{font-size:24px; font-weight:700; letter-spacing:-.01em; margin:0; text-wrap:balance}
+  .sec-head .kicker{font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase}
+  .sec-lede{color:var(--ink2); max-width:68ch; margin:0 0 20px}
+  .sec-lede b{color:var(--ink); font-weight:600}
+
+  /* ── cards & tiles ── */
+  .grid{display:grid; gap:14px}
+  .grid.c4{grid-template-columns:repeat(4,1fr)}
+  .grid.c3{grid-template-columns:repeat(3,1fr)}
+  .grid.c2{grid-template-columns:repeat(2,1fr)}
+  @media (max-width:900px){ .grid.c4{grid-template-columns:repeat(2,1fr)} .grid.c3{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:560px){ .grid.c4,.grid.c3,.grid.c2{grid-template-columns:1fr} .wordmark .tick{font-size:48px} }
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:18px}
+  .tile .lbl{font-size:12.5px; font-weight:600; color:var(--ink2); letter-spacing:.02em; display:flex; align-items:center; gap:8px}
+  .tile .val{font-size:34px; font-weight:700; letter-spacing:-.01em; margin:6px 0 2px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; white-space:nowrap}
+  .tile .val .unit{font-size:15px; color:var(--muted); font-weight:500}
+  .tile .sub{font-size:12.5px; font-family:var(--mono); color:var(--muted)}
+  .delta{display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:12px; font-weight:600; border-radius:999px; padding:2px 9px}
+  .delta.up{color:var(--up); background:var(--up-dim)}
+  .delta.dn{color:var(--down); background:var(--down-dim)}
+  .delta.fl{color:var(--ink2); background:rgba(255,255,255,.06)}
+  .plain{font-size:13.5px; color:var(--ink2); margin-top:10px; padding-top:10px; border-top:1px solid var(--border)}
+  .impact{margin-top:10px; display:grid; gap:6px}
+  .impact .row{display:grid; grid-template-columns:86px 1fr; gap:8px; font-size:12.5px}
+  .impact .k{color:var(--muted); font-weight:600; letter-spacing:.03em; font-size:11px; text-transform:uppercase; padding-top:1.5px}
+  .impact .v{color:var(--ink2)}
+  .impact .v b{color:var(--ink); font-weight:600}
+
+  /* learn-more */
+  details.learn{margin-top:10px; border-top:1px solid var(--border); padding-top:8px}
+  details.learn summary{cursor:pointer; font-size:12.5px; color:var(--s1); font-weight:600; list-style:none; display:flex; gap:6px; align-items:center}
+  details.learn summary::before{content:"+"; font-family:var(--mono); font-weight:600}
+  details.learn[open] summary::before{content:"–"}
+  details.learn summary::-webkit-details-marker{display:none}
+  details.learn p{font-size:13px; color:var(--ink2); margin:8px 0 0}
+
+  /* ── chart cards ── */
+  .chart-card{background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:18px 18px 10px; margin-top:14px}
+  .chart-head{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap}
+  .chart-head h3{font-size:15.5px; font-weight:600; margin:0}
+  .chart-head .note{font-size:12.5px; color:var(--muted); margin:2px 0 0}
+  .legend{display:flex; gap:16px; font-size:12.5px; color:var(--ink2); align-items:center; flex-wrap:wrap}
+  .legend .li{display:inline-flex; align-items:center; gap:7px}
+  .legend .key{width:16px; height:2px; border-radius:2px; display:inline-block}
+  .chart-host{position:relative; margin-top:8px}
+  .chart-host svg{display:block; width:100%; height:auto}
+  .chart-host:focus-visible{outline:2px solid var(--s1); outline-offset:2px; border-radius:6px}
+  .tip{position:absolute; pointer-events:none; background:#fffdf9; border:1px solid var(--border2); border-radius:8px; padding:9px 12px; font-size:12.5px; box-shadow:0 10px 28px rgba(59,42,28,.22); opacity:0; transition:opacity .12s; min-width:150px; max-width:240px; z-index:5}
+  @media (prefers-reduced-motion:reduce){ .tip{transition:none} }
+  .tip .tt{font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:5px}
+  .tip .trow{display:flex; align-items:baseline; gap:8px}
+  .tip .tkey{width:12px; height:2px; border-radius:2px; flex:none; align-self:center}
+  .tip .tval{font-family:var(--mono); font-weight:600; font-size:14px; color:var(--ink)}
+  .tip .tname{color:var(--ink2); font-size:11.5px}
+  .tip .tnote{margin-top:6px; padding-top:6px; border-top:1px solid var(--border); color:var(--ink2); font-size:11.5px; line-height:1.45}
+  .chart-foot{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 0 8px}
+  .chart-foot .hint{font-size:11.5px; color:var(--muted)}
+  details.tbl summary{cursor:pointer; font-size:12px; color:var(--ink2); font-weight:600; list-style:none}
+  details.tbl summary::-webkit-details-marker{display:none}
+  details.tbl summary:hover{color:var(--ink)}
+  details.tbl{width:100%}
+  details.tbl .twrap{overflow-x:auto; margin:10px 0 8px}
+  table.data{border-collapse:collapse; font-family:var(--mono); font-size:12px; font-variant-numeric:tabular-nums; min-width:340px}
+  table.data th{color:var(--muted); font-weight:500; text-align:left; padding:5px 16px 5px 0; border-bottom:1px solid var(--grid); letter-spacing:.04em; font-size:11px; text-transform:uppercase}
+  table.data td{padding:5px 16px 5px 0; border-bottom:1px solid var(--grid); color:var(--ink2)}
+  table.data td:first-child{color:var(--ink)}
+
+  /* tenor tabs */
+  .tabs{display:flex; gap:6px; flex-wrap:wrap}
+  .tabs button{font-family:var(--mono); font-size:12.5px; font-weight:600; color:var(--ink2); background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:6px 13px; cursor:pointer}
+  .tabs button:hover{color:var(--ink); border-color:var(--border2)}
+  .tabs button[aria-selected="true"]{color:#fff; background:var(--s1); border-color:var(--s1)}
+  .tabs button:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
+  .tenor-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px}
+  @media (max-width:700px){ .tenor-stats{grid-template-columns:repeat(2,1fr)} }
+  .tenor-stats .ts{background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:10px 12px}
+  .tenor-stats .ts .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
+  .tenor-stats .ts .v{font-family:var(--mono); font-size:16px; font-weight:600; color:var(--ink); margin-top:3px}
+
+  /* calendar */
+  .cal{display:grid; gap:8px; margin-top:14px}
+  .cal .row{display:grid; grid-template-columns:120px 1fr auto; gap:14px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:13px 16px}
+  @media (max-width:600px){ .cal .row{grid-template-columns:96px 1fr} .cal .row .chip{display:none} }
+  .cal .d{font-family:var(--mono); font-size:13px; color:var(--ink); font-weight:600}
+  .cal .what b{font-weight:600}
+  .cal .what .m{display:block; font-size:12.5px; color:var(--muted)}
+  .chip{font-family:var(--mono); font-size:11.5px; color:var(--ink2); border:1px solid var(--border2); border-radius:999px; padding:3px 11px; white-space:nowrap}
+  .chip.soon{color:var(--up); border-color:rgba(31,191,117,.4)}
+
+  /* glossary */
+  .gloss{columns:2; column-gap:28px; margin-top:6px}
+  @media (max-width:760px){ .gloss{columns:1} }
+  .gloss .g{break-inside:avoid; padding:12px 0; border-bottom:1px solid var(--border)}
+  .gloss dt{font-weight:600; font-size:14px}
+  .gloss dt .abbr{font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:6px}
+  .gloss dd{margin:4px 0 0; font-size:13px; color:var(--ink2)}
+
+  /* footer */
+  footer{margin-top:56px; background:var(--mast)}
+  .foot-in{max-width:var(--maxw); margin:0 auto; padding:28px 24px 40px; display:grid; grid-template-columns:1.2fr 1fr; gap:28px; font-size:13px; color:var(--mast-ink2)}
+  @media (max-width:760px){ .foot-in{grid-template-columns:1fr} }
+  footer h4{font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--mast-ink); margin:0 0 10px; opacity:.85}
+  footer a{color:var(--mast-ink2)}
+  footer a:hover{color:var(--mast-ink)}
+  footer ul{margin:0; padding-left:18px}
+  footer li{margin-bottom:5px}
+  .srcnote{font-family:var(--mono); font-size:11.5px; color:var(--mast-ink2); margin-top:14px; opacity:.8}
+  .foot-bar{border-top:1px solid var(--mast-border); padding:16px 24px 20px; text-align:center; color:var(--mast-ink2); font-family:var(--mono); font-size:11.5px}
+  .foot-bar b{color:var(--mast-ink); font-weight:600}
+
+  .term{border-bottom:1px dotted var(--muted); cursor:help; text-decoration:none; color:inherit}
+</style>
+
+<!-- ═════════════ MASTHEAD ═════════════ -->
+<header class="mast">
+  <div class="mast-in">
+    <div class="wordmark" aria-label="The Ticker">
+      <span class="the">The</span>
+      <span class="tick">ticker
+        <span class="tris" aria-hidden="true">
+          <svg width="26" height="24" viewBox="0 0 26 24"><path d="M13 2 L24 22 L2 22 Z" fill="none" stroke="#1fbf75" stroke-width="4" stroke-linejoin="round"/></svg>
+          <svg width="26" height="24" viewBox="0 0 26 24" style="align-self:flex-end"><path d="M13 22 L2 2 L24 2 Z" fill="none" stroke="#e8453c" stroke-width="4" stroke-linejoin="round"/></svg>
+        </span>
+      </span>
+    </div>
+    <div class="mast-meta">
+      <div class="tag">BANK OF TANZANIA · MARKET INTELLIGENCE</div>
+      <div class="asof">Data as of <b id="asof">—</b></div>
+      <div style="margin-top:3px" id="update-line">Auto-refreshed when BOT publishes new data</div>
+    </div>
+  </div>
+  <div class="tape" aria-label="Key indicators ticker tape"><div class="tape-track" id="tape"></div></div>
+</header>
+
+<nav class="nav" aria-label="Sections">
+  <div class="nav-in">
+    <a href="#policy">Policy Desk</a>
+    <a href="#economy">Economy</a>
+    <a href="#bonds">Bonds &amp; Yields</a>
+    <a href="#tbills">Treasury Bills</a>
+    <a href="#calendar">Auction Calendar</a>
+    <a href="#market">Market Snapshot</a>
+    <a href="#glossary">Glossary</a>
+  </div>
+</nav>
+
+<main>
+  <!-- sections are rendered by JS from DATA -->
+  <section id="policy"></section>
+  <section id="economy"></section>
+  <section id="bonds"></section>
+  <section id="tbills"></section>
+  <section id="calendar"></section>
+  <section id="market"></section>
+  <section id="glossary"></section>
+</main>
+
+<footer>
+  <div class="foot-in">
+    <div>
+      <h4>About The Ticker</h4>
+      <p style="margin:0">The Ticker condenses the Bank of Tanzania's public releases — MPC statements, auction results, the issuance calendar and monthly economic data — into one page, translated into plain language. Every figure links back to its official source. It is an educational summary, <b style="color:var(--mast-ink)">not investment advice</b>; always confirm against the official BOT publication before acting.</p>
+      <div class="srcnote" id="foot-update">—</div>
+    </div>
+    <div>
+      <h4>Official sources</h4>
+      <ul id="sources"></ul>
+    </div>
+  </div>
+  <div class="foot-bar">© 2026 <b>Kelvin Langley</b> · The Ticker — all rights reserved. Data: Bank of Tanzania &amp; NBS public releases.</div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   DATA — the only block the refresh agent needs to regenerate.
+   Every value must come from a Bank of Tanzania (or NBS) publication.
+   ════════════════════════════════════════════════════════════════════ */
+const DATA = { /* INJECT-DATA */
+  asOf: "2026-08-25",
+  updateLine: "Auto-refreshed from BOT releases · last built 25 Aug 2026",
+  tape: [
+    {label:"CBR", value:"6.25%", dir:"up"},
+    {label:"REDISCOUNT", value:"8.75%", dir:"up"},
+    {label:"INFLATION JUL", value:"4.2%", dir:"up"},
+    {label:"GDP 2025", value:"5.9%", dir:"up"},
+    {label:"364-DAY BILL", value:"6.744%", dir:"dn"},
+    {label:"182-DAY BILL", value:"5.180%", dir:"up"},
+    {label:"2Y BOND", value:"8.403%", dir:"up"},
+    {label:"5Y BOND", value:"9.539%", dir:"dn"},
+    {label:"10Y BOND", value:"10.875%", dir:"up"},
+    {label:"15Y BOND", value:"10.552%", dir:"up"},
+    {label:"20Y BOND", value:"11.331%", dir:"up"},
+    {label:"25Y BOND", value:"11.480%", dir:"dn"},
+    {label:"TZS/USD", value:"2,656.67", dir:"up"},
+    {label:"IBCM 7-DAY", value:"6.41%", dir:"up"}
+  ],
+  sources: [
+    {name:"BOT homepage — live indicators", url:"https://www.bot.go.tz/"},
+    {name:"MPC statement, July 2026 (No. 244)", url:"https://www.bot.go.tz/Adverts/PressRelease/en/2026070313025546.pdf"},
+    {name:"Monthly Economic Review, July 2026", url:"https://www.bot.go.tz/Publications/Regular/Monthly%20Economic%20Review/en/2026081709131797.pdf"},
+    {name:"Treasury bill auction results", url:"https://www.bot.go.tz/TBills"},
+    {name:"Treasury bond auction results", url:"https://www.bot.go.tz/TBonds"},
+    {name:"Issuance calendar, Q1 FY2026/27", url:"https://www.bot.go.tz/Adverts/PressRelease/en/ISSUANCE_CALENDER_English_Version.pdf"},
+    {name:"MPC meetings calendar 2026/27", url:"https://www.bot.go.tz/webdocs/Other/MPC_Calendar.pdf"},
+    {name:"NBS CPI release, July 2026", url:"https://www.nbs.go.tz/uploads/statistics/documents/en-1786367529-CPI%20%20Release_072026_English.pdf"},
+    {name:"NBS GDP highlights, Q1 2026", url:"https://www.nbs.go.tz/uploads/statistics/documents/en-1787377904-Highlights%20on%20the%20First%20Quarter%20GDP%202026%20FS.pdf"}
+  ],
+  cbrHistory: [
+    {t:"2024-01", v:5.5, note:"CBR introduced at 5.5% — first MPC under the new interest-rate framework"},
+    {t:"2024-04-03", v:6, note:"Hike +50 bps to 6.00% to contain lingering inflation pressure"},
+    {t:"2024-07-03", v:6, note:"Hold at 6.00%"},
+    {t:"2024-10-03", v:6, note:"Hold at 6.00%"},
+    {t:"2025-01-07", v:6, note:"Hold at 6.00%"},
+    {t:"2025-04-03", v:6, note:"Hold at 6.00%"},
+    {t:"2025-07-02", v:5.75, note:"Cut −25 bps to 5.75% — inflation low and stable"},
+    {t:"2025-10-02", v:5.75, note:"Hold at 5.75%"},
+    {t:"2026-01-07", v:5.75, note:"Hold at 5.75%"},
+    {t:"2026-04-01", v:5.75, note:"Hold at 5.75%; rate corridor narrowed from ±200 to ±150 bps"},
+    {t:"2026-07-02", v:6.25, note:"Hike +50 bps to 6.25% — imported cost pressure (energy, fertiliser, transport)"}
+  ],
+  inflation: [
+    {t:"2024-07",v:3.0},{t:"2024-08",v:3.1},{t:"2024-09",v:3.1},{t:"2024-10",v:3.0},
+    {t:"2024-11",v:3.0},{t:"2024-12",v:3.1},{t:"2025-01",v:3.1},{t:"2025-02",v:3.2},
+    {t:"2025-03",v:3.3},{t:"2025-04",v:3.2},{t:"2025-05",v:3.2},{t:"2025-06",v:3.3},
+    {t:"2025-07",v:3.3},{t:"2025-08",v:3.4},{t:"2025-09",v:3.4},{t:"2025-10",v:3.5},
+    {t:"2025-11",v:3.4},{t:"2025-12",v:3.6},{t:"2026-01",v:3.3},{t:"2026-02",v:3.2},
+    {t:"2026-03",v:3.2},{t:"2026-04",v:4.0,note:"Step up as fuel and transport costs fed through"},
+    {t:"2026-05",v:4.2},{t:"2026-06",v:4.0,note:"Government fuel subsidy in May–June softened the climb"},
+    {t:"2026-07",v:4.2,note:"Latest reading; core 3.9%, food 4.1%"}
+  ],
+  gdpAnnual: [
+    {t:"2019-12-31",v:6.9,note:"Pre-pandemic pace (older 2015-base series)"},
+    {t:"2020-12-31",v:3.6,note:"COVID year — growth halved but stayed positive"},
+    {t:"2021-12-31",v:4.9},
+    {t:"2022-12-31",v:4.6,note:"Revised"},
+    {t:"2023-12-31",v:5.2,note:"Revised"},
+    {t:"2024-12-31",v:5.6,note:"Revised"},
+    {t:"2025-12-31",v:5.9,note:"Provisional; just under BOT's 6.0% projection"}
+  ],
+  yieldCurve: [
+    {t:2, v:8.4033, note:"Auction No. 712, 29 Jul 2026 · 9.50% coupon · bids 3.9× the offer"},
+    {t:5, v:9.5385, note:"Auction No. 700, 29 Apr 2026 · 10.25% coupon · stalest point — no 5y auction since; next one 16 Sep"},
+    {t:10, v:10.8747, note:"Auction No. 711, 22 Jul 2026 · fresh 11.25% coupon issue · bids 2.5×"},
+    {t:15, v:10.5515, note:"19 Aug 2026 re-opening of a high-coupon (12.25%) bond at a premium price — that is why 15y sits below 10y; an auction-timing effect, not a true inversion"},
+    {t:20, v:11.3306, note:"Auction No. 710, 8 Jul 2026 · 12.25% coupon · bids 1.9×"},
+    {t:25, v:11.4799, note:"Auction No. 695 3rd sale, 5 Aug 2026 · 13.25% coupon · bids 4.3× — heaviest demand on the curve"}
+  ],
+  tenors: [
+    {y:2, name:"2-Year", coupon:"9.50%", way:8.4033, wap:"101.9580", date:"2026-07-29", auc:"No. 712", bid:"3.9×", prev:"8.3624% · 4 Mar 2026", isin:"TZ1996106120",
+     note:"Investors bid TZS 438bn for the TZS 111bn on offer. The 2-year is the closest bond to the CBR's orbit — its yield (8.40%) is roughly the policy rate plus a 2-year risk premium.",
+     hist:[
+      {t:"2025-02-05",v:12.551,note:"Auction 668 · 12.5% coupon"},
+      {t:"2025-04-16",v:12.0835,note:"Auction 668 re-opening · 12.5% coupon"},
+      {t:"2025-07-09",v:12.1695,note:"Auction 672 · 12% coupon"},
+      {t:"2025-10-15",v:10.0481,note:"Auction 687 · 10% coupon"},
+      {t:"2026-03-04",v:8.3624,note:"Auction 697 · 9.5% coupon"},
+      {t:"2026-07-29",v:8.4033,note:"Auction 712 · 9.5% coupon"}
+     ]},
+    {y:5, name:"5-Year", coupon:"10.25%", way:9.5385, wap:"102.7520", date:"2026-04-29", auc:"No. 700", bid:"1.6×", prev:"10.5425% · 26 Nov 2025", isin:"TZ1996105965",
+     note:"No 5-year auction has been held since 29 April 2026, so this is the stalest point on the curve. The next 5-year re-opening is scheduled for 16 Sep 2026 — watch it for a fresh read on the belly of the curve.",
+     hist:[
+      {t:"2024-10-16",v:12.409,note:"Auction 571 re-opening · 9.18% coupon"},
+      {t:"2025-03-19",v:13.1445,note:"Auction 671 · 13% coupon"},
+      {t:"2025-05-21",v:12.9424,note:"Auction 671 re-opening · 13% coupon"},
+      {t:"2025-07-16",v:13.1814,note:"Auction 673 · 12.75% coupon"},
+      {t:"2025-09-10",v:12.4838,note:"Auction 673 re-opening · 12.75% coupon"},
+      {t:"2025-11-26",v:10.5425,note:"Auction 689 · 10.75% coupon"},
+      {t:"2026-04-29",v:9.5385,note:"Auction 700 · 10.25% coupon"}
+     ]},
+    {y:10, name:"10-Year", coupon:"11.25%", way:10.8747, wap:"103.4215", date:"2026-07-22", auc:"No. 711", bid:"2.5×", prev:"10.3913% · 10 Jun 2026", isin:"TZ1996106112",
+     note:"The 10-year backed up from its April low of 9.40% to 10.87% in July — the clearest sign the mid-curve repriced after the CBR hike. A re-opening of this line is scheduled for 2 Sep 2026.",
+     hist:[
+      {t:"2025-01-22",v:14.0846,note:"Auction 667 · 14% coupon"},
+      {t:"2025-04-30",v:14.2594,note:"Auction 667 re-opening · 14% coupon"},
+      {t:"2025-07-30",v:13.7356,note:"Auction 674 · 13.5% coupon"},
+      {t:"2025-10-01",v:12.4457,note:"Auction 674 re-opening · 13.5% coupon"},
+      {t:"2026-01-14",v:11.3021,note:"Auction 694 · 11.75% coupon"},
+      {t:"2026-04-15",v:9.3962,note:"Auction 699 · 10.5% coupon — the cycle low"},
+      {t:"2026-06-10",v:10.3913,note:"Auction 699 re-opening · 10.5% coupon"},
+      {t:"2026-07-22",v:10.8747,note:"Auction 711 · 11.25% coupon"}
+     ]},
+    {y:15, name:"15-Year", coupon:"12.25%", way:10.5515, wap:"112.4713", date:"2026-08-19", auc:"No. 696 re-opening", bid:"4.1×", prev:"10.3861% · 13 May 2026", isin:"TZ1996105924",
+     note:"This 10.55% came from re-opening an older bond that pays a rich 12.25% coupon — investors paid a premium price (112.47 per 100) for it, which pulls the yield below the 10-year's. An auction-timing and coupon effect, not a signal that 15 years pays less than 10.",
+     hist:[
+      {t:"2024-09-11",v:15.35,note:"Auction 529 re-opening · 13.5% coupon"},
+      {t:"2024-10-02",v:15.7611,note:"Auction 500 re-opening · 13.5% coupon"},
+      {t:"2025-03-05",v:14.6268,note:"Auction 670 · 14.5% coupon"},
+      {t:"2025-08-20",v:13.907,note:"Auction 670 3rd sale · 14.5% coupon"},
+      {t:"2025-11-12",v:12.0794,note:"Auction 688 · 12.75% coupon"},
+      {t:"2026-02-18",v:10.7834,note:"Auction 696 · 12.25% coupon"},
+      {t:"2026-05-13",v:10.3861,note:"Auction 701 · 10.75% coupon"},
+      {t:"2026-08-19",v:10.5515,note:"Auction 696 re-opening · 12.25% coupon · bids 4.1×"}
+     ]},
+    {y:20, name:"20-Year", coupon:"12.25%", way:11.3306, wap:"107.1868", date:"2026-07-08", auc:"No. 710", bid:"1.9×", prev:"10.4297% · 28 May 2026", isin:"TZ1996106062",
+     note:"Auction 710 drew TZS 610bn of bids for TZS 327bn on offer. The jump from 10.43% (May) to 11.33% (July) came alongside a new, higher 12.25% coupon line and the CBR hike week.",
+     hist:[
+      {t:"2024-08-21",v:15.3953,note:"Auction 528 re-opening · 15.49% coupon"},
+      {t:"2024-09-25",v:15.4463,note:"Auction 544 re-opening · 15.49% coupon"},
+      {t:"2024-10-30",v:15.7551,note:"Auction 498 re-opening · 15.49% coupon"},
+      {t:"2024-11-26",v:15.6424,note:"Auction 549 re-opening · 15.49% coupon"},
+      {t:"2024-12-18",v:15.7063,note:"Auction 504 re-opening · 15.49% coupon"},
+      {t:"2025-02-19",v:15.2774,note:"Auction 669 · 15.25% coupon"},
+      {t:"2025-04-03",v:15.1054,note:"Auction 669 re-opening · 15.25% coupon"},
+      {t:"2025-06-18",v:14.5,note:"Auction 669 3rd sale · 15.25% coupon"},
+      {t:"2025-09-03",v:13.551,note:"Auction 678 · 14% coupon"},
+      {t:"2025-12-17",v:12.0193,note:"Auction 693 · 13% coupon"},
+      {t:"2026-03-18",v:10.7148,note:"Auction 698 · 12% coupon"},
+      {t:"2026-05-28",v:10.4297,note:"Auction 702 · 11% coupon — the cycle low"},
+      {t:"2026-07-08",v:11.3306,note:"Auction 710 · 12.25% coupon"}
+     ]},
+    {y:25, name:"25-Year", coupon:"13.25%", way:11.4799, wap:"114.4173", date:"2026-08-05", auc:"No. 695 3rd sale", bid:"4.3×", prev:"11.8861% · 24 Jun 2026", isin:"TZ1996105916",
+     note:"The most oversubscribed auction on the curve: TZS 1.245 trillion of bids for TZS 290bn on offer (4.3×), plus another TZS 202bn chasing the TZS 124bn non-competitive window. Pension funds and insurers hunt duration here.",
+     hist:[
+      {t:"2024-09-04",v:15.4188,note:"Auction 568 re-opening · 15.95% coupon"},
+      {t:"2024-11-13",v:15.9303,note:"Auction 561 re-opening · 15.95% coupon — the peak"},
+      {t:"2025-01-08",v:15.8447,note:"Auction 666 · 15.75% coupon"},
+      {t:"2025-05-07",v:15.2874,note:"Auction 666 re-opening · 15.75% coupon"},
+      {t:"2025-06-04",v:14.7978,note:"Auction 666 3rd sale · 15.75% coupon"},
+      {t:"2025-08-06",v:14.4239,note:"Auction 675 · 15% coupon"},
+      {t:"2025-09-24",v:13.187,note:"Auction 686 · 13.75% coupon"},
+      {t:"2026-02-04",v:11.9942,note:"Auction 695 · 13.25% coupon"},
+      {t:"2026-06-24",v:11.8861,note:"Auction 695 re-opening · 13.25% coupon"},
+      {t:"2026-08-05",v:11.4799,note:"Auction 695 3rd sale · bids 4.3× the offer"}
+     ]}
+  ],
+  tbill364: [
+    {t:"2025-02-12",v:12.251},{t:"2025-02-26",v:11.7215},{t:"2025-03-12",v:10.7455},
+    {t:"2025-03-26",v:9.4779},{t:"2025-04-09",v:8.9344},{t:"2025-04-23",v:8.9141},
+    {t:"2025-05-14",v:9.1304},{t:"2025-05-28",v:8.7167},{t:"2025-07-02",v:8.4152},
+    {t:"2025-07-23",v:7.8482},{t:"2025-08-13",v:6.9156},{t:"2025-08-27",v:6.6566},
+    {t:"2025-09-17",v:5.9865},{t:"2025-10-08",v:5.6088},{t:"2025-10-22",v:6.2994},
+    {t:"2025-11-05",v:6.5518},{t:"2025-11-19",v:6.3489},{t:"2025-12-03",v:6.2418},
+    {t:"2026-01-07",v:6.1904},{t:"2026-01-21",v:6.2321},{t:"2026-02-11",v:6.2295},
+    {t:"2026-02-25",v:6.1683},{t:"2026-03-11",v:6.3961},
+    {t:"2026-03-25",v:5.1958,note:"Sharp dip vs neighbouring auctions — published by BOT as-is"},
+    {t:"2026-04-08",v:5.7846},{t:"2026-04-22",v:5.6552},{t:"2026-05-06",v:5.6827},
+    {t:"2026-05-20",v:5.5796},{t:"2026-06-03",v:6.3808},{t:"2026-06-17",v:6.9219},
+    {t:"2026-07-02",v:7.1175,note:"CBR hike week"},{t:"2026-07-15",v:7.0258},
+    {t:"2026-08-12",v:6.7441,note:"Auction 1204 · bids 3.7× the 364-day offer"}
+  ],
+  tbill182: [
+    {t:"2025-04-09",v:8.4742},{t:"2025-04-23",v:8.4742},{t:"2025-05-14",v:8.3284},
+    {t:"2025-05-28",v:8.1447},{t:"2025-08-13",v:7.8483},{t:"2025-08-27",v:7.0761},
+    {t:"2025-09-17",v:6.5621},{t:"2025-10-08",v:6.8144},{t:"2025-10-22",v:6.0001},
+    {t:"2025-11-05",v:5.9711},{t:"2025-11-19",v:5.8672},{t:"2025-12-03",v:5.9129},
+    {t:"2026-01-07",v:5.8224},{t:"2026-01-21",v:5.8863},{t:"2026-02-11",v:5.9497},
+    {t:"2026-02-25",v:5.7451},{t:"2026-03-11",v:5.5933},{t:"2026-03-25",v:5.7782},
+    {t:"2026-04-08",v:5.5702},{t:"2026-04-22",v:5.3569},{t:"2026-05-06",v:5.2681},
+    {t:"2026-05-20",v:5.1898},{t:"2026-06-03",v:5.0426},{t:"2026-06-17",v:4.9181},
+    {t:"2026-07-02",v:4.6994},{t:"2026-07-15",v:4.7799},{t:"2026-08-12",v:5.1803}
+  ],
+  fx: [
+    {t:"2025-06",v:2604.6},{t:"2025-07",v:2545.8},{t:"2025-08",v:2463.3},
+    {t:"2025-09",v:2442.8},{t:"2025-10",v:2451.6},{t:"2025-11",v:2436.8,note:"Strongest point of the year for the shilling"},
+    {t:"2025-12",v:2447.5},{t:"2026-01",v:2518.1},{t:"2026-02",v:2542.5},
+    {t:"2026-03",v:2577.4},{t:"2026-04",v:2602},{t:"2026-05",v:2609.2},
+    {t:"2026-06",v:2623.5},
+    {t:"2026-08-25",v:2656.67,note:"Latest BOT indicative selling rate (buying 2,630.37) — not end-of-month"}
+  ],
+  calendar: [
+    {date:"2026-08-26", what:"Treasury bills — all four tenors", m:"New issue · 35, 91, 182 & 364-day offered together"},
+    {date:"2026-09-02", what:"10-Year Treasury bond", m:"Re-opening of the 11.25% line (the calendar PDF mislabels this row as 20-Year)"},
+    {date:"2026-09-09", what:"Treasury bills — all four tenors", m:"New issue"},
+    {date:"2026-09-16", what:"5-Year Treasury bond", m:"Re-opening · first 5-year supply since April — a fresh read on the belly of the curve"},
+    {date:"2026-09-23", what:"Treasury bills — all four tenors", m:"New issue"},
+    {date:"2026-09-30", what:"15-Year Treasury bond", m:"Re-opening · last auction on the published Q1 FY2026/27 calendar"}
+  ]
+};
+
+/* ════════════ helpers ════════════ */
+const $ = (s, r=document) => r.querySelector(s);
+const el = (tag, cls, txt) => { const n=document.createElement(tag); if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; };
+const fmt = (v, dp=2) => v==null ? "—" : Number(v).toLocaleString("en-US",{minimumFractionDigits:dp, maximumFractionDigits:dp});
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function dlabel(iso){ if(!iso) return "—"; const p=iso.split("-"); if(p.length===1) return p[0];
+  const mon=MONTHS[+p[1]-1]||""; return p.length===2 ? `${mon} ${p[0]}` : `${+p[2]} ${mon} ${p[0].slice(2)}`; }
+function dlong(iso){ if(!iso) return "—"; const p=iso.split("-"); const mon=MONTHS[+p[1]-1]||"";
+  return p.length===2 ? `${mon} ${p[0]}` : `${+p[2]} ${mon} ${p[0]}`; }
+
+/* ════════════ chart engine ════════════
+   lineChart(host, {series:[{name,color,points:[{t,v,note}],step}], unit, band, type, yFmtDp, xKind})
+   - crosshair + tooltip (value leads, note follows), keyboard arrows, table twin
+   - marks per dataviz spec: 2px lines, r>=4 markers w/ 2px surface ring,
+     10% area wash on single series, hairline solid grid                       */
+function lineChart(host, cfg){
+  const W=760, H=300, P={t:18, r:18, b:34, l:52};
+  const S=cfg.series.filter(s=>s.points && s.points.length);
+  if(!S.length){ host.append(el("p","",'No published data yet.')); return; }
+  const isCol = cfg.type==="column";
+  const lin = cfg.xKind==="linear";
+  /* canonical x domain = union of every series' x values, so series with
+     different auction dates still align on one crosshair */
+  const xs=[...new Set(S.flatMap(s=>s.points.map(p=>p.t)))];
+  xs.sort((a,b)=> lin ? a-b : String(a).localeCompare(String(b)));
+  S.forEach(s=>{ s._m=new Map(s.points.map(p=>[p.t,p])); });
+  const allV = S.flatMap(s=>s.points.map(p=>p.v));
+  let lo = Math.min(...allV), hi = Math.max(...allV);
+  if(cfg.band){ lo=Math.min(lo,cfg.band.lo); hi=Math.max(hi,cfg.band.hi); }
+  const pad=(hi-lo)*0.12||1; lo=cfg.zero?Math.min(0,lo):lo-pad; hi=hi+pad;
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.setAttribute("role","img");
+  svg.setAttribute("aria-label", cfg.aria||"chart");
+  const X = i => lin
+    ? P.l + ((xs[i]-xs[0])/((xs[xs.length-1]-xs[0])||1))*(W-P.l-P.r)
+    : P.l + (xs.length===1?0.5:(i/(xs.length-1)))*(W-P.l-P.r);
+  const Y = v => P.t + (1-(v-lo)/(hi-lo)) * (H-P.t-P.b);
+  const g=(c)=>{const n=document.createElementNS(NS,"g");if(c)n.setAttribute("class",c);return n;};
+
+  /* target band */
+  if(cfg.band){
+    const b=document.createElementNS(NS,"rect");
+    b.setAttribute("x",P.l); b.setAttribute("width",W-P.l-P.r);
+    b.setAttribute("y",Y(cfg.band.hi)); b.setAttribute("height",Y(cfg.band.lo)-Y(cfg.band.hi));
+    b.setAttribute("fill","var(--band)"); svg.append(b);
+    const bl=document.createElementNS(NS,"text");
+    bl.setAttribute("x",W-P.r-4); bl.setAttribute("y",Y(cfg.band.hi)+12);
+    bl.setAttribute("text-anchor","end"); bl.setAttribute("fill","var(--muted)");
+    bl.setAttribute("font-size","10"); bl.setAttribute("font-family","var(--mono)");
+    bl.textContent=cfg.band.label; svg.append(bl);
+  }
+  /* y grid + ticks — rounded to clean steps */
+  const gy=g();
+  const rawStep=(hi-lo)/4, mag=Math.pow(10,Math.floor(Math.log10(rawStep)));
+  const step=[1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=rawStep)||rawStep;
+  for(let v=Math.ceil(lo/step)*step; v<=hi+1e-9; v+=step){
+    const y=Y(v);
+    const ln=document.createElementNS(NS,"line");
+    ln.setAttribute("x1",P.l); ln.setAttribute("x2",W-P.r);
+    ln.setAttribute("y1",y); ln.setAttribute("y2",y);
+    ln.setAttribute("stroke","var(--grid)"); ln.setAttribute("stroke-width","1"); gy.append(ln);
+    const t=document.createElementNS(NS,"text");
+    t.setAttribute("x",P.l-8); t.setAttribute("y",y+3.5); t.setAttribute("text-anchor","end");
+    t.setAttribute("fill","var(--muted)"); t.setAttribute("font-size","10.5"); t.setAttribute("font-family","var(--mono)");
+    t.textContent=fmt(v, cfg.yFmtDp??1); gy.append(t);
+  }
+  svg.append(gy);
+  /* x ticks: sparse */
+  const gx=g(); const maxTicks=7; const every=Math.max(1,Math.ceil(xs.length/maxTicks));
+  xs.forEach((x,i)=>{
+    if(i%every && i!==xs.length-1) return;
+    if(i!==xs.length-1 && every>1 && xs.length-1-i<every*0.6) return; /* avoid colliding with the last tick */
+    const t=document.createElementNS(NS,"text");
+    t.setAttribute("x", X(i)); t.setAttribute("y",H-10);
+    t.setAttribute("text-anchor", X(i)>W-46 ? "end" : X(i)<P.l+26 ? "start" : "middle");
+    t.setAttribute("fill","var(--muted)");
+    t.setAttribute("font-size","10.5"); t.setAttribute("font-family","var(--mono)");
+    t.textContent = cfg.xFmt ? cfg.xFmt(x) : dlabel(x); gx.append(t);
+  });
+  svg.append(gx);
+
+  if(isCol){
+    const bw=Math.min(24,(W-P.l-P.r)/xs.length*0.55), y0=Y(Math.max(0,lo));
+    xs.forEach((xv,i)=>{
+      const p=S[0]._m.get(xv); if(!p) return;
+      const x=X(i)-bw/2, y=Y(p.v);
+      const r=document.createElementNS(NS,"path");
+      const rad=Math.min(4,bw/2);
+      r.setAttribute("d",`M${x},${y0} L${x},${y+rad} Q${x},${y} ${x+rad},${y} L${x+bw-rad},${y} Q${x+bw},${y} ${x+bw},${y+rad} L${x+bw},${y0} Z`);
+      r.setAttribute("fill",S[0].color); r.setAttribute("data-i",i); r.setAttribute("class","colm");
+      svg.append(r);
+    });
+    /* selective cap labels: endpoint + max */
+    const vs=xs.map(xv=>{const p=S[0]._m.get(xv); return p?p.v:null;});
+    const mi=vs.indexOf(Math.max(...vs.filter(v=>v!=null)));
+    [mi, vs.length-1].filter((v,i,a)=>a.indexOf(v)===i).forEach(i=>{
+      if(vs[i]==null) return;
+      const t=document.createElementNS(NS,"text");
+      t.setAttribute("x",X(i)); t.setAttribute("y",Y(vs[i])-7);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("fill","var(--ink2)");
+      t.setAttribute("font-size","11"); t.setAttribute("font-family","var(--mono)"); t.setAttribute("font-weight","600");
+      t.textContent=fmt(vs[i],cfg.yFmtDp??1); svg.append(t);
+    });
+  } else {
+    S.forEach(s=>{
+      let d="", firstI=-1, lastI=-1, prevV=null;
+      xs.forEach((xv,i)=>{
+        const p=s._m.get(xv); if(!p) return;
+        const x=X(i), y=Y(p.v);
+        if(firstI<0){ d=`M${x},${y}`; firstI=i; }
+        else if(s.step){ d+=` L${x},${Y(prevV)} L${x},${y}`; }
+        else d+=` L${x},${y}`;
+        prevV=p.v; lastI=i;
+      });
+      if(S.length===1 && !s.step && cfg.wash!==false){
+        const a=document.createElementNS(NS,"path");
+        a.setAttribute("d", d+` L${X(lastI)},${H-P.b} L${X(firstI)},${H-P.b} Z`);
+        a.setAttribute("fill",s.color); a.setAttribute("opacity","0.1"); svg.append(a);
+      }
+      const p=document.createElementNS(NS,"path");
+      p.setAttribute("d",d); p.setAttribute("fill","none"); p.setAttribute("stroke",s.color);
+      p.setAttribute("stroke-width","2"); p.setAttribute("stroke-linejoin","round"); p.setAttribute("stroke-linecap","round");
+      svg.append(p);
+      /* markers: endpoint always; all points if few */
+      const markAll = s.points.length<=13 || cfg.markAll;
+      xs.forEach((xv,i)=>{
+        const pt=s._m.get(xv); if(!pt) return;
+        if(!markAll && i!==lastI) return;
+        const c=document.createElementNS(NS,"circle");
+        c.setAttribute("cx",X(i)); c.setAttribute("cy",Y(pt.v)); c.setAttribute("r","4.5");
+        c.setAttribute("fill",s.color); c.setAttribute("stroke","var(--card)"); c.setAttribute("stroke-width","2");
+        svg.append(c);
+      });
+      /* endpoint direct label */
+      const last=s._m.get(xs[lastI]);
+      const t=document.createElementNS(NS,"text");
+      t.setAttribute("x",X(lastI)+8); t.setAttribute("y",Y(last.v)+4);
+      t.setAttribute("fill","var(--ink)"); t.setAttribute("font-size","11.5");
+      t.setAttribute("font-family","var(--mono)"); t.setAttribute("font-weight","600");
+      if(X(lastI)+46>W){ t.setAttribute("x",X(lastI)-8); t.setAttribute("text-anchor","end"); t.setAttribute("y",Y(last.v)-9); }
+      t.textContent=fmt(last.v,cfg.yFmtDp??1); svg.append(t);
+    });
+  }
+
+  /* crosshair + tooltip */
+  const cross=document.createElementNS(NS,"line");
+  cross.setAttribute("y1",P.t); cross.setAttribute("y2",H-P.b);
+  cross.setAttribute("stroke","var(--border2)"); cross.setAttribute("stroke-width","1");
+  cross.setAttribute("visibility","hidden"); svg.append(cross);
+  const dots=S.map(s=>{ const c=document.createElementNS(NS,"circle");
+    c.setAttribute("r","4.5"); c.setAttribute("fill",s.color);
+    c.setAttribute("stroke","var(--card)"); c.setAttribute("stroke-width","2");
+    c.setAttribute("visibility","hidden"); svg.append(c); return c; });
+
+  const wrap=el("div","chart-host"); wrap.tabIndex=0;
+  wrap.setAttribute("role","application");
+  wrap.setAttribute("aria-label",(cfg.aria||"chart")+" — use left and right arrow keys to read values");
+  wrap.append(svg);
+  const tip=el("div","tip"); wrap.append(tip);
+  host.append(wrap);
+
+  let idx=-1;
+  function show(i, fromKey){
+    if(i<0||i>=xs.length){ hide(); return; }
+    idx=i;
+    const cx = X(i);
+    cross.setAttribute("x1",cx); cross.setAttribute("x2",cx); cross.setAttribute("visibility","visible");
+    tip.textContent="";
+    const tt=el("div","tt", cfg.xFmt ? cfg.xFmt(xs[i]) : dlong(xs[i])); tip.append(tt);
+    let note=null;
+    S.forEach((s,si)=>{
+      const p=s._m.get(xs[i]); if(!p){ dots[si].setAttribute("visibility","hidden"); return; }
+      dots[si].setAttribute("cx",cx); dots[si].setAttribute("cy",Y(p.v)); dots[si].setAttribute("visibility","visible");
+      const row=el("div","trow");
+      const k=el("span","tkey"); k.style.background=s.color; row.append(k);
+      row.append(el("span","tval", fmt(p.v,cfg.yFmtDp??1)+(cfg.unit||"")));
+      if(S.length>1) row.append(el("span","tname",s.name));
+      tip.append(row);
+      if(p.note && !note) note=p.note;
+    });
+    if(!note && cfg.tipNote) note=cfg.tipNote(S[0]._m.get(xs[i]), i);
+    if(note) tip.append(el("div","tnote",note));
+    tip.style.opacity=1;
+    const rect=wrap.getBoundingClientRect(), fx=cx/W*rect.width;
+    tip.style.left=Math.min(Math.max(4,fx+14), rect.width-tip.offsetWidth-4)+"px";
+    tip.style.top="14px";
+    svg.querySelectorAll(".colm").forEach(c=>c.setAttribute("opacity", +c.getAttribute("data-i")===i?"1":"0.8"));
+  }
+  function hide(){ idx=-1; cross.setAttribute("visibility","hidden");
+    dots.forEach(d=>d.setAttribute("visibility","hidden")); tip.style.opacity=0;
+    svg.querySelectorAll(".colm").forEach(c=>c.setAttribute("opacity","1")); }
+  wrap.addEventListener("pointermove",e=>{
+    const rect=wrap.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)/rect.width*W;
+    let best=0,bd=1e9;
+    xs.forEach((x,i)=>{ const d=Math.abs(X(i)-mx); if(d<bd){bd=d;best=i;} });
+    show(best);
+  });
+  wrap.addEventListener("pointerleave",hide);
+  wrap.addEventListener("keydown",e=>{
+    if(e.key==="ArrowRight"){ show(Math.min(xs.length-1,(idx<0?0:idx+1))); e.preventDefault(); }
+    else if(e.key==="ArrowLeft"){ show(Math.max(0,(idx<0?xs.length-1:idx-1))); e.preventDefault(); }
+    else if(e.key==="Escape") hide();
+  });
+
+  /* table twin */
+  const foot=el("div","chart-foot");
+  const det=el("details","tbl");
+  det.append(el("summary","","View as table ▾"));
+  const twrap=el("div","twrap"); const table=el("table","data");
+  const thead=el("thead"); const hr=el("tr");
+  hr.append(el("th","", cfg.xName||"Date"));
+  S.forEach(s=>hr.append(el("th","",s.name+(cfg.unit?` (${cfg.unit.trim()})`:""))));
+  if(S.some(s=>s.points.some(p=>p.note))) hr.append(el("th","","Note"));
+  thead.append(hr); table.append(thead);
+  const tb=el("tbody");
+  xs.forEach((x,i)=>{
+    const tr=el("tr"); tr.append(el("td","", cfg.xFmt?cfg.xFmt(x):dlong(x)));
+    S.forEach(s=>{ const p=s._m.get(x); tr.append(el("td","", p?fmt(p.v,cfg.yFmtDp??1):"—")); });
+    const notes=S.map(s=>{ const p=s._m.get(x); return p&&p.note; }).filter(Boolean);
+    if(S.some(s=>s.points.some(p=>p.note))) tr.append(el("td","",notes.join(" · ")));
+    tb.append(tr);
+  });
+  table.append(tb); twrap.append(table); det.append(twrap);
+  foot.append(det);
+  foot.append(el("span","hint","Hover or focus + arrow keys to read any point"));
+  host.append(foot);
+}
+
+function chartCard(parent,{title,note,series,legend, ...cfg}){
+  const card=el("div","chart-card");
+  const head=el("div","chart-head");
+  const left=el("div");
+  left.append(el("h3","",title));
+  if(note) left.append(el("p","note",note));
+  head.append(left);
+  if(series.filter(s=>s.points&&s.points.length).length>1){
+    const lg=el("div","legend");
+    series.forEach(s=>{ const li=el("span","li"); const k=el("span","key"); k.style.background=s.color; li.append(k, document.createTextNode(s.name)); lg.append(li); });
+    head.append(lg);
+  }
+  card.append(head);
+  lineChart(card,{series,...cfg});
+  parent.append(card);
+  return card;
+}
+
+/* ════════════ section builders ════════════ */
+function secHead(sec, kicker, title, lede){
+  const h=el("div","sec-head");
+  h.append(el("span","kicker",kicker));
+  const h2=el("h2","",title); h.append(h2);
+  sec.append(h);
+  if(lede){ const p=el("p","sec-lede"); p.innerHTML=lede; sec.append(p); }
+}
+function tile(grid,{label,value,unit,delta,dir,sub,plain,econ,mkt,learnQ,learnA}){
+  const c=el("div","card tile");
+  c.append(el("div","lbl",label));
+  const v=el("div","val"); v.append(document.createTextNode(value??"—"));
+  if(unit) v.append(el("span","unit",unit));
+  if(delta){ const d=el("span","delta "+(dir||"fl"));
+    d.append(el("span","tri "+(dir==="up"?"up":dir==="dn"?"dn":"fl")), document.createTextNode(delta)); v.append(d); }
+  c.append(v);
+  if(sub) c.append(el("div","sub",sub));
+  if(plain) c.append(el("div","plain",plain));
+  if(econ||mkt){
+    const im=el("div","impact");
+    if(econ){ const r=el("div","row"); r.append(el("span","k","Economy"));
+      const vv=el("span","v"); vv.innerHTML=econ; r.append(vv); im.append(r); }
+    if(mkt){ const r=el("div","row"); r.append(el("span","k","Markets"));
+      const vv=el("span","v"); vv.innerHTML=mkt; r.append(vv); im.append(r); }
+    c.append(im);
+  }
+  if(learnQ){ const d=el("details","learn"); d.append(el("summary","",learnQ));
+    d.append(el("p","",learnA)); c.append(d); }
+  grid.append(c);
+  return c;
+}
+
+function render(){
+  if(!DATA){ return; }
+  document.title="The Ticker";
+  $("#asof").textContent=dlong(DATA.asOf);
+  $("#update-line").textContent=DATA.updateLine||"";
+  $("#foot-update").textContent=(DATA.updateLine?("Refresh: "+DATA.updateLine+" · "):"")+"Built from BOT public releases · Generated "+dlong(DATA.asOf);
+  /* tape (duplicated for seamless loop) */
+  const tape=$("#tape");
+  for(let k=0;k<2;k++) DATA.tape.forEach(t=>{
+    const it=el("span","tape-item");
+    if(k) it.setAttribute("aria-hidden","true");
+    it.append(el("span","tl",t.label), el("span","tv",t.value),
+      el("span","tri "+(t.dir==="up"?"up":t.dir==="dn"?"dn":"fl")));
+    tape.append(it);
+  });
+  DATA.sources.forEach(s=>{ const li=el("li"); const a=el("a","",s.name);
+    a.href=s.url; a.target="_blank"; a.rel="noopener"; li.append(a); $("#sources").append(li); });
+  buildPolicy(); buildEconomy(); buildBonds(); buildTbills(); buildCalendar(); buildMarket(); buildGlossary();
+}
+
+/* Section builders — narration lives in the data-refresh layer. INJECT-BUILDERS */
+const daysUntil = iso => Math.round((new Date(iso+"T12:00:00") - new Date())/86400000);
+
+function buildPolicy(){
+  const sec=$("#policy");
+  secHead(sec,"Policy Desk","The price of money",
+    'The Monetary Policy Committee (MPC) meets once a quarter to set the <b>Central Bank Rate (CBR)</b> — the anchor every other interest rate in Tanzania keys off. When it moves, deposit rates, lending rates and government-securities yields eventually follow.');
+  const g1=el("div","grid c4"); sec.append(g1);
+  tile(g1,{label:"Central Bank Rate (CBR)", value:"6.25", unit:"%", delta:"+50 bps", dir:"up",
+    sub:"Set 2 Jul 2026 · MPC statement No. 244",
+    plain:"The rate BOT charges banks for short-term money. Raised from 5.75% in July — the first hike since April 2024.",
+    econ:"Borrowing gets more expensive, which cools spending and helps contain the imported-cost pressure (fuel, fertiliser, transport) the MPC flagged.",
+    mkt:"New T-bill and bond auctions tend to clear at <b>higher yields</b>, and existing bond prices soften. The 7-day interbank rate must stay within ±150 bps of this rate.",
+    learnQ:"New to this? What the CBR actually is",
+    learnA:"Introduced in January 2024, the CBR replaced the old discount-rate framework. BOT steers the 7-day interbank rate into a corridor of ±150 basis points around the CBR by adding or draining bank liquidity. A basis point (bp) is one hundredth of a percentage point — 50 bps = 0.50%."});
+  tile(g1,{label:"Rediscount rate", value:"8.75", unit:"%", delta:"CBR +250 bps", dir:"up",
+    sub:"Q3 2026 · BOT homepage",
+    plain:"What a bank pays to cash in securities at BOT before they mature — deliberately penalty-priced above the CBR.",
+    econ:"A safety valve: banks can always raise emergency liquidity, but at a cost that discourages careless funding.",
+    mkt:"Acts as a practical ceiling on short-term funding costs — if market rates approached it, banks would borrow from BOT instead."});
+  tile(g1,{label:"Lombard rate", value:"7.75", unit:"%", delta:"Apr 2026", dir:"fl",
+    sub:"Latest published · Q3 value pending",
+    plain:"The rate for overnight borrowing from BOT against collateral. The published figure predates the July CBR hike, so expect an updated value.",
+    econ:"Part of the same liquidity toolkit — it caps overnight funding stress in the banking system.",
+    mkt:"Watch for the refreshed Q3 figure; it normally tracks the policy rate upward."});
+  tile(g1,{label:"Next MPC decision", value:"7 Oct", unit:"2026", delta:"in "+daysUntil("2026-10-07")+" days", dir:"fl",
+    sub:"Statement & media briefing 8 Oct 2026",
+    plain:"The next scheduled CBR decision. After that: 6 Jan 2027 and 31 Mar 2027.",
+    econ:"Each decision sets the stance for the following quarter.",
+    mkt:"Auction yields often drift toward where the market expects the MPC to go — the weeks before a meeting are when positioning happens."});
+  const mc=el("div","card"); mc.style.marginTop="14px";
+  mc.append(el("div","lbl","What the MPC said in July 2026 — in plain words"));
+  const ul=el("ul"); ul.style.cssText="margin:10px 0 0;padding-left:20px;color:var(--ink2);font-size:13.5px;display:grid;gap:6px";
+  [
+    "Rates went up 50 bps to contain inflation pressure from costlier energy, fertiliser and transport (Middle East conflict effects) — not because the economy is weak.",
+    "Growth is fine: mainland GDP grew about 6% in the first half of 2026, and the second half is projected above 6%.",
+    "Inflation rose to 4.2% (May) from 3.2% (March) but stays inside the 3–5% target; a government fuel subsidy in May–June softened the climb.",
+    "Credit is flowing fast — private-sector credit grew about 24% on average — and banks are healthy (bad loans at 2.9% versus the 5% comfort threshold).",
+    "Buffers are solid: FX reserves around USD 6 billion, about 4.3 months of import cover, above the 4-month benchmark."
+  ].forEach(t=>ul.append(el("li","",t)));
+  mc.append(ul); sec.append(mc);
+  chartCard(sec,{title:"CBR since introduction (Jan 2024)",
+    note:"Step line — each point is an MPC decision. Hover or use arrow keys for the decision note.",
+    series:[{name:"CBR", color:"var(--s1)", step:true, points:DATA.cbrHistory}],
+    unit:"%", yFmtDp:2, markAll:true, aria:"Central Bank Rate history"});
+}
+
+function buildEconomy(){
+  const sec=$("#economy");
+  secHead(sec,"Economy","Growth and prices",
+    'Two numbers drive everything else on this page: <b>inflation</b> (how fast prices rise) and <b>GDP growth</b> (how fast the economy expands). Policy tries to keep the first inside 3–5% without choking the second.');
+  const g=el("div","grid c4"); sec.append(g);
+  tile(g,{label:"Headline inflation", value:"4.2", unit:"% y/y", delta:"+0.2 pp", dir:"up",
+    sub:"July 2026 · NBS release, 10 Aug",
+    plain:"A typical basket of goods costs 4.2% more than a year ago — up from 4.0% in June, but still inside the 3–5% target band.",
+    econ:"Moderate and predictable inflation preserves buying power; it is the climb from 3.2% in March that pushed the MPC to hike.",
+    mkt:"Inflation is the floor under yields: a 364-day bill at 6.74% pays roughly 2.5% after inflation. If inflation keeps rising, investors demand higher yields to compensate.",
+    learnQ:"Headline vs core — what's the difference?",
+    learnA:"Headline counts everything in the basket. Core (3.9%) strips out unprocessed food, energy and utilities — the volatile items — so it shows the underlying trend. When core rises too, the pressure is broad, not just a food-price blip."});
+  tile(g,{label:"Core inflation", value:"3.9", unit:"% y/y", delta:"+0.2 pp", dir:"up",
+    sub:"July 2026 · 73.9% of the basket",
+    plain:"Underlying inflation without volatile food and energy — also drifting up, which tells the MPC the pressure isn't only food.",
+    econ:"Broadening price pressure is harder to reverse than a food-price spike.",
+    mkt:"Core drives policy more than headline — its climb supports rates staying higher for now."});
+  tile(g,{label:"GDP growth 2025", value:"5.9", unit:"%", delta:"vs 5.6% in 2024", dir:"up",
+    sub:"Provisional · BOT projects 6.3% for 2026",
+    plain:"The economy grew 5.9% in 2025, led by agriculture, finance, transport, mining and construction.",
+    econ:"Faster growth means more jobs, more tax revenue and more demand for credit.",
+    mkt:"A growing economy absorbs heavy government borrowing more easily — part of why bond auctions stay oversubscribed."});
+  tile(g,{label:"GDP growth Q1 2026", value:"6.0", unit:"% y/y", delta:"new 2019 base", dir:"up",
+    sub:"NBS · fastest: financial services +20.5%",
+    plain:"First reading on the rebased (2019) series: 6.0% versus 4.3% a year earlier on the same basis. Not directly comparable with the older 2015-base numbers.",
+    econ:"Financial services (+20.5%), health (+13.1%) and education (+11.3%) led the quarter.",
+    mkt:"A booming financial sector deepens the local investor base bidding at every auction."});
+  chartCard(sec,{title:"Headline inflation, monthly",
+    note:"Shaded band = the 3–5% national target. Hover for each month's reading.",
+    series:[{name:"Headline inflation", color:"var(--s1)", points:DATA.inflation}],
+    unit:"% y/y", yFmtDp:1, band:{lo:3,hi:5,label:"3–5% target"}, aria:"Tanzania headline inflation, monthly"});
+  chartCard(sec,{title:"Annual real GDP growth",
+    note:"Mainland Tanzania at market prices. 2025 is provisional; BOT projects 6.3% in 2026 and 6.6% in 2027.",
+    series:[{name:"Real GDP growth", color:"var(--s1)", points:DATA.gdpAnnual}],
+    unit:"%", yFmtDp:1, type:"column", zero:true, xFmt:t=>String(t).slice(0,4), xName:"Year", aria:"Annual GDP growth"});
+}
+
+function buildBonds(){
+  const sec=$("#bonds");
+  secHead(sec,"Bonds & Yields","The government yield curve",
+    'Treasury bonds are how the government borrows for the long haul — 2 to 25 years. The <b>weighted average yield (WAY)</b> from each auction is the market’s honest price for lending to the government at that tenor. Yields have fallen a long way from the 15%+ era of late 2024 — a curve-wide rally that repriced everything — with a modest back-up since the July 2026 CBR hike.');
+  chartCard(sec,{title:"Yield curve — latest auction yield per tenor",
+    note:"Each dot is that tenor's most recent auction. Hover the dots — the 15-year sitting below the 10-year has a story.",
+    series:[{name:"Latest WAY", color:"var(--s1)", points:DATA.yieldCurve}],
+    unit:"%", yFmtDp:2, xKind:"linear", markAll:true, wash:false, xFmt:v=>v+"y", xName:"Tenor", aria:"Government bond yield curve by tenor"});
+  const card=el("div","chart-card");
+  const head=el("div","chart-head"); const left=el("div");
+  left.append(el("h3","","Yield history, bond by bond"));
+  left.append(el("p","note","Pick a tenor. Each point is one auction; hover for the coupon and auction note."));
+  head.append(left); card.append(head);
+  const tabs=el("div","tabs"); tabs.style.marginTop="10px"; tabs.setAttribute("role","tablist"); card.append(tabs);
+  const chartWrap=el("div"); card.append(chartWrap);
+  const statsWrap=el("div"); card.append(statsWrap);
+  sec.append(card);
+  function pick(i){
+    tabs.querySelectorAll("button").forEach((b,bi)=>b.setAttribute("aria-selected", bi===i?"true":"false"));
+    chartWrap.textContent=""; statsWrap.textContent="";
+    const t=DATA.tenors[i];
+    const host=el("div"); chartWrap.append(host);
+    lineChart(host,{series:[{name:t.name+" WAY", color:"var(--s1)", points:t.hist}],
+      unit:"%", yFmtDp:2, markAll:true, aria:t.name+" Treasury bond yield history"});
+    const st=el("div","tenor-stats");
+    [["Coupon",t.coupon],["Latest WAY",fmt(t.way,2)+"%"],["Price paid (WAP)",t.wap],["Bids vs offer",t.bid],
+     ["Auction",t.auc],["Auction date",dlong(t.date)],["Previous WAY",t.prev],["ISIN",t.isin]].forEach(([k,v])=>{
+      const d=el("div","ts"); d.append(el("div","k",k), el("div","v",v)); st.append(d);
+    });
+    statsWrap.append(st);
+    if(t.note){ const p=el("p","note"); p.style.margin="12px 0 8px"; p.textContent=t.note; statsWrap.append(p); }
+  }
+  DATA.tenors.forEach((t,i)=>{ const b=el("button","",t.y+"y"); b.setAttribute("role","tab");
+    b.addEventListener("click",()=>pick(i)); tabs.append(b); });
+  pick(DATA.tenors.length-1);
+  const g=el("div","grid c2"); g.style.marginTop="14px"; sec.append(g);
+  tile(g,{label:"If yields FALL", value:"Prices rise", unit:"",
+    plain:"Falling auction yields mean the government borrows more cheaply — and every existing bond with a higher coupon becomes more valuable.",
+    econ:"Cheaper government borrowing leaves more budget room; lending rates across the economy tend to ease.",
+    mkt:"Holders sit on capital gains (see the premium prices on re-opened high-coupon bonds); new investors lock in less. The 2024→2026 rally is exactly this story."});
+  tile(g,{label:"If yields RISE", value:"Prices fall", unit:"",
+    plain:"Rising yields — like the back-up since the July CBR hike — mean better entry points for new money and paper losses for holders who must mark to market.",
+    econ:"The government pays more to borrow; over time that feeds the budget's interest bill.",
+    mkt:"Watch the bid-to-cover ratios: demand at 2–4× the offer is what keeps the rise orderly.",
+    learnQ:"Why were bonds paying 15%+ in 2024 and ~11% now?",
+    learnA:"Three forces: inflation stayed low (3–4%), banking-system liquidity improved, and demand from pension funds, insurers and banks kept every auction oversubscribed. When many bidders chase a fixed offer, the accepted yield gets pushed down."});
+}
+
+function buildTbills(){
+  const sec=$("#tbills");
+  secHead(sec,"Treasury Bills","Short-term rates, discovered fortnightly",
+    'T-bills are government IOUs of a year or less, sold at a discount and repaid at face value. They are the <b>reference for all short-term money</b> — banks price deposits and short-term lending off them, and the 364-day bill is the benchmark. Auction results are the market’s fortnightly verdict on where short-term rates should sit.');
+  const g=el("div","grid c4"); sec.append(g);
+  tile(g,{label:"364-day bill", value:"6.74", unit:"%", delta:"−28 bps", dir:"dn",
+    sub:"Auction 1204 · 12 Aug 2026",
+    plain:"The benchmark. Bids of TZS 330bn chased just TZS 89bn on offer (3.7× covered), pushing the yield down from 7.03%.",
+    econ:"Sits just above the 6.25% CBR — short-term money is priced tight to policy.",
+    mkt:"The single most-watched rate for pricing deposits, repos and money-market funds."});
+  tile(g,{label:"182-day bill", value:"5.18", unit:"%", delta:"+40 bps", dir:"up",
+    sub:"Auction 1204 · fully taken up",
+    plain:"TZS 106bn tendered for TZS 80bn on offer. Recovering from its June low of 4.92%.",
+    econ:"The 6-month rate catching up toward the new, higher policy rate.",
+    mkt:"The gap below the 364-day (~1.6 pp) rewards going longer at the short end."});
+  tile(g,{label:"91-day bill", value:"3.44", unit:"%", delta:"undersubscribed", dir:"up",
+    sub:"Auction 1204 · TZS 60bn of 70bn taken",
+    plain:"Well below the CBR — banks park very short money cheaply because liquidity is plentiful at this tenor.",
+    econ:"A sign of comfortable bank liquidity rather than distress.",
+    mkt:"Undersubscription here while the 364-day is 3.7× covered shows investors stretching for yield."});
+  tile(g,{label:"35-day bill", value:"2.13", unit:"%", delta:"undersubscribed", dir:"dn",
+    sub:"Auction 1204 · TZS 43bn of 50bn taken",
+    plain:"The shortest tenor, mainly a cash-management tool — its yield says little about policy.",
+    econ:"Very cheap month-long money for the government.",
+    mkt:"Treat it as a parking rate, not a benchmark."});
+  const g2=el("div","grid c3"); g2.style.marginTop="14px"; sec.append(g2);
+  tile(g2,{label:"Auction 1204 demand", value:"1.87", unit:"× covered",
+    sub:"TZS 539bn tendered vs 289bn offered",
+    plain:"Total bids nearly doubled the offer, with demand concentrated in the 364-day tenor.",
+    econ:"Strong demand lets the government fund itself without paying up.",
+    mkt:"Falling cover ratios would be the early warning that yields need to rise."});
+  tile(g2,{label:"Interbank 7-day rate", value:"6.41", unit:"%", delta:"24 Aug", dir:"up",
+    sub:"Overnight: 6.20% (21 Aug) · June avg 5.98%",
+    plain:"What banks charge each other for week-long money — risen since the CBR hike, and sitting inside the ±150 bp corridor around 6.25%.",
+    econ:"Proof the July hike transmitted: bank funding costs followed the CBR up.",
+    mkt:"The corridor anchor confirms T-bill yields near 6.7% are consistent with policy, not an anomaly."});
+  tile(g2,{label:"Overall T-bill WAY", value:"4.83", unit:"%", delta:"Jun 2026", dir:"up",
+    sub:"Monthly average across all tenors · MER",
+    plain:"BOT's monthly average across all four tenors — dragged below the benchmark by the cheap 35- and 91-day tenors.",
+    econ:"The government's blended short-term funding cost.",
+    mkt:"Compare with 6.74% on the 364-day to see how much tenor choice matters."});
+  chartCard(sec,{title:"T-bill yields by auction",
+    note:"Every auction since February 2025. The two short tenors (35 & 91-day) are excluded — several auctions had no successful bids.",
+    series:[{name:"364-day", color:"var(--s1)", points:DATA.tbill364},
+            {name:"182-day", color:"var(--s2)", points:DATA.tbill182}],
+    unit:"%", yFmtDp:2, aria:"Treasury bill yields by auction"});
+}
+
+function buildCalendar(){
+  const sec=$("#calendar");
+  secHead(sec,"Auction Calendar","What's coming to market",
+    'From BOT’s issuance calendar for Q1 of financial year 2026/27 (Jul–Sep). Auctions run on Wednesdays, alternating T-bill weeks and bond weeks. The Oct–Dec calendar is <b>not yet published</b> — it usually lands near the quarter’s start.');
+  const cal=el("div","cal"); sec.append(cal);
+  DATA.calendar.forEach(r=>{
+    const d=daysUntil(r.date); if(d<-1) return;
+    const row=el("div","row");
+    row.append(el("div","d", dlong(r.date)));
+    const w=el("div","what"); w.append(el("b","",r.what), el("span","m",r.m)); row.append(w);
+    row.append(el("span","chip"+(d<=7?" soon":""), d<0?"settling":d===0?"today":"in "+d+" day"+(d===1?"":"s")));
+    cal.append(row);
+  });
+  const note=el("div","card"); note.style.marginTop="14px";
+  note.append(el("div","lbl","How to use this"));
+  const p=el("p","plain"); p.style.borderTop="0"; p.style.paddingTop="4px";
+  p.textContent="Coupons, exact amounts and settlement dates are announced per auction in BOT's Call for Tender a few days before each date, and the government may amend the calendar as borrowing needs change. Bids go through your bank or broker via the CDS; the minimum competitive bid rules and the C-form fields are the same as at every auction.";
+  note.append(p); sec.append(note);
+}
+
+function buildMarket(){
+  const sec=$("#market");
+  secHead(sec,"Market Snapshot","The wider picture",
+    'The backdrop every yield trades against: the shilling, the country’s FX buffers, and how fast money and credit are growing.');
+  const g=el("div","grid c3"); sec.append(g);
+  tile(g,{label:"TZS / USD", value:"2,656.67", unit:"TZS", delta:"weaker y/y", dir:"up",
+    sub:"BOT selling rate · 25 Aug 2026 (buying 2,630.37)",
+    plain:"It takes 2,657 shillings to buy a dollar — about 8% more than a year ago. On this chart, up = weaker shilling.",
+    econ:"A weaker shilling makes imports (fuel, fertiliser) pricier — one of the channels behind the inflation climb.",
+    mkt:"FX weakness pressures BOT to keep policy tight, which supports higher yields."});
+  tile(g,{label:"FX reserves", value:"5.67", unit:"USD bn", delta:"4.4 months cover", dir:"fl",
+    sub:"End-June 2026 · benchmark is 4 months",
+    plain:"Enough foreign currency to pay for 4.4 months of imports — above the national comfort line, supported by gold exports and BOT's domestic gold-buying programme.",
+    econ:"Reserves are the buffer that lets BOT smooth FX shocks.",
+    mkt:"Comfortable reserves reduce the tail risk foreign investors price into TZS assets."});
+  tile(g,{label:"Private-sector credit", value:"28.1", unit:"% y/y", delta:"from 23.2%", dir:"up",
+    sub:"June 2026 · trade +59.5%, transport +46.4%",
+    plain:"Bank lending to businesses and households is growing very fast — led by trade, transport and agriculture.",
+    econ:"Credit this strong fuels growth but is one reason the MPC leans against inflation.",
+    mkt:"Banks lending heavily to the private sector have less idle cash for T-bills — over time that competes yields upward."});
+  const g2=el("div","grid c3"); g2.style.marginTop="14px"; sec.append(g2);
+  tile(g2,{label:"Money supply (M3)", value:"25.5", unit:"% y/y",
+    sub:"June 2026 · table figure 25.4%",
+    plain:"The broadest measure of money in the economy, growing fast — consistent with the credit boom.",
+    econ:"Rapid money growth is a medium-term inflation watch-item.",
+    mkt:"More money in the system also means more cash chasing auctions — part of the oversubscription story."});
+  tile(g2,{label:"Current account", value:"−2.30", unit:"USD bn", delta:"wider y/y", dir:"dn",
+    sub:"Year to June 2026 · was −2.15bn",
+    plain:"The country buys slightly more from the world than it sells; imports grew 20.6%, exports 17.2%.",
+    econ:"A modest deficit (~2.4% of GDP) financed by investment inflows — manageable, but it leans on the shilling.",
+    mkt:"Persistent widening would pressure the currency and, eventually, yields."});
+  tile(g2,{label:"Banking health (NPLs)", value:"2.9", unit:"%",
+    sub:"May 2026 · threshold 5%",
+    plain:"Only 2.9% of bank loans are going bad — comfortably under the 5% comfort threshold.",
+    econ:"Healthy banks keep credit flowing without needing rescue.",
+    mkt:"Bank soundness underpins the whole auction machine — banks are the biggest bidders."});
+  chartCard(sec,{title:"TZS/USD — end of month",
+    note:"Up = weaker shilling. The slide since the November 2025 strong point is about 9%.",
+    series:[{name:"TZS per USD", color:"var(--s1)", points:DATA.fx}],
+    unit:"", yFmtDp:0, aria:"Tanzanian shilling per US dollar, monthly"});
+}
+
+function buildGlossary(){
+  const sec=$("#glossary");
+  secHead(sec,"Glossary","The jargon, translated",
+    'Every term used on this page, in one place. Taught, not assumed.');
+  const dl=el("dl","gloss"); sec.append(dl);
+  [
+    ["Central Bank Rate","CBR","The policy rate BOT sets quarterly; the anchor for all other interest rates. Since Jan 2024 it replaced the old discount-rate framework."],
+    ["Rate corridor","±150 bps","The band around the CBR that BOT keeps the 7-day interbank rate inside, by adding or draining liquidity. Narrowed from ±200 bps in April 2026."],
+    ["Rediscount rate","","The penalty-priced rate (currently 8.75%) for cashing in securities at BOT before maturity."],
+    ["Lombard rate","","The rate for overnight borrowing from BOT against collateral — an emergency liquidity line for banks."],
+    ["Weighted average yield","WAY","The average return investors locked in at an auction, weighted by amount allocated. The single best summary of an auction's price."],
+    ["Weighted average price","WAP","The average price paid per 100 of face value. Above 100 = premium (rich coupon), below 100 = discount."],
+    ["Coupon","","The fixed annual interest a bond pays on its face value, in two half-yearly instalments. Set at issue; the auction price adjusts the actual yield."],
+    ["Bid-to-cover","","Total bids ÷ amount offered. 4.3× means demand was more than four times the supply — a seller's market that pushes yields down."],
+    ["Re-opening","","Selling more of an existing bond instead of creating a new one. The coupon stays fixed, so the price adjusts to deliver today's yield."],
+    ["Treasury bill","T-bill","Government borrowing of one year or less (35, 91, 182, 364 days), sold at a discount and repaid at face value."],
+    ["Treasury bond","T-bond","Government borrowing of 2–25 years paying a fixed coupon. Auctioned fortnightly on a published calendar."],
+    ["Interbank cash market","IBCM","Where banks lend each other overnight-to-7-day money. Its rate proves whether the CBR is transmitting."],
+    ["Headline vs core inflation","NCPI","Headline counts the whole basket; core strips volatile food, energy and utilities to show the underlying trend."],
+    ["Basis point","bp","One hundredth of a percentage point. A 50 bp hike moves 5.75% to 6.25%."],
+    ["Yield vs price","","They move in opposite directions: when market yields fall, existing bonds with higher coupons become more valuable, and vice versa."],
+    ["Primary vs secondary market","","Primary = buying at the BOT auction. Secondary = trading afterwards on the DSE. This page tracks the primary market."]
+  ].forEach(([t,a,d])=>{
+    const g=el("div","g"); const dt=el("dt","",t);
+    if(a) dt.append(el("span","abbr",a));
+    g.append(dt, el("dd","",d)); dl.append(g);
+  });
+}
+
+render();
+</script>
