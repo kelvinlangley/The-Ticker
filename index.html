@@ -248,22 +248,22 @@
    Every value must come from a Bank of Tanzania (or NBS) publication.
    ════════════════════════════════════════════════════════════════════ */
 const DATA = { /* INJECT-DATA */
-  asOf: "2026-08-25",
-  updateLine: "Auto-refreshed from BOT releases · last built 25 Aug 2026",
+  asOf: "2026-08-27",
+  updateLine: "Auto-refreshed from BOT releases · last built 27 Aug 2026",
   tape: [
     {label:"CBR", value:"6.25%", dir:"up"},
     {label:"REDISCOUNT", value:"8.75%", dir:"up"},
     {label:"INFLATION JUL", value:"4.2%", dir:"up"},
     {label:"GDP 2025", value:"5.9%", dir:"up"},
-    {label:"364-DAY BILL", value:"6.744%", dir:"dn"},
-    {label:"182-DAY BILL", value:"5.180%", dir:"up"},
+    {label:"364-DAY BILL", value:"6.649%", dir:"dn"},
+    {label:"182-DAY BILL", value:"5.055%", dir:"dn"},
     {label:"2Y BOND", value:"8.403%", dir:"up"},
     {label:"5Y BOND", value:"9.539%", dir:"dn"},
     {label:"10Y BOND", value:"10.875%", dir:"up"},
     {label:"15Y BOND", value:"10.552%", dir:"up"},
     {label:"20Y BOND", value:"11.331%", dir:"up"},
     {label:"25Y BOND", value:"11.480%", dir:"dn"},
-    {label:"TZS/USD", value:"2,656.67", dir:"up"},
+    {label:"TZS/USD", value:"2,658.06", dir:"up"},
     {label:"IBCM 7-DAY", value:"6.41%", dir:"up"}
   ],
   sources: [
@@ -408,7 +408,8 @@ const DATA = { /* INJECT-DATA */
     {t:"2026-04-08",v:5.7846},{t:"2026-04-22",v:5.6552},{t:"2026-05-06",v:5.6827},
     {t:"2026-05-20",v:5.5796},{t:"2026-06-03",v:6.3808},{t:"2026-06-17",v:6.9219},
     {t:"2026-07-02",v:7.1175,note:"CBR hike week"},{t:"2026-07-15",v:7.0258},
-    {t:"2026-08-12",v:6.7441,note:"Auction 1204 · bids 3.7× the 364-day offer"}
+    {t:"2026-08-12",v:6.7441,note:"Auction 1204 · bids 3.7× the 364-day offer"},
+    {t:"2026-08-26",v:6.6492,note:"Auction 1205 · bids 2.6× the 364-day offer"}
   ],
   tbill182: [
     {t:"2025-04-09",v:8.4742},{t:"2025-04-23",v:8.4742},{t:"2025-05-14",v:8.3284},
@@ -419,7 +420,8 @@ const DATA = { /* INJECT-DATA */
     {t:"2026-02-25",v:5.7451},{t:"2026-03-11",v:5.5933},{t:"2026-03-25",v:5.7782},
     {t:"2026-04-08",v:5.5702},{t:"2026-04-22",v:5.3569},{t:"2026-05-06",v:5.2681},
     {t:"2026-05-20",v:5.1898},{t:"2026-06-03",v:5.0426},{t:"2026-06-17",v:4.9181},
-    {t:"2026-07-02",v:4.6994},{t:"2026-07-15",v:4.7799},{t:"2026-08-12",v:5.1803}
+    {t:"2026-07-02",v:4.6994},{t:"2026-07-15",v:4.7799},{t:"2026-08-12",v:5.1803},
+    {t:"2026-08-26",v:5.0546}
   ],
   fx: [
     {t:"2025-06",v:2604.6},{t:"2025-07",v:2545.8},{t:"2025-08",v:2463.3},
@@ -427,7 +429,7 @@ const DATA = { /* INJECT-DATA */
     {t:"2025-12",v:2447.5},{t:"2026-01",v:2518.1},{t:"2026-02",v:2542.5},
     {t:"2026-03",v:2577.4},{t:"2026-04",v:2602},{t:"2026-05",v:2609.2},
     {t:"2026-06",v:2623.5},
-    {t:"2026-08-25",v:2656.67,note:"Latest BOT indicative selling rate (buying 2,630.37) — not end-of-month"}
+    {t:"2026-08-27",v:2658.06,note:"Latest BOT indicative selling rate (buying 2,631.74) — not end-of-month"}
   ],
   calendar: [
     {date:"2026-08-26", what:"Treasury bills — all four tenors", m:"New issue · 35, 91, 182 & 364-day offered together"},
@@ -795,7 +797,7 @@ function buildEconomy(){
     sub:"July 2026 · NBS release, 10 Aug",
     plain:"A typical basket of goods costs 4.2% more than a year ago — up from 4.0% in June, but still inside the 3–5% target band.",
     econ:"Moderate and predictable inflation preserves buying power; it is the climb from 3.2% in March that pushed the MPC to hike.",
-    mkt:"Inflation is the floor under yields: a 364-day bill at 6.74% pays roughly 2.5% after inflation. If inflation keeps rising, investors demand higher yields to compensate.",
+    mkt:"Inflation is the floor under yields: a 364-day bill at 6.65% pays roughly 2.4% after inflation. If inflation keeps rising, investors demand higher yields to compensate.",
     learnQ:"Headline vs core — what's the difference?",
     learnA:"Headline counts everything in the basket. Core (3.9%) strips out unprocessed food, energy and utilities — the volatile items — so it shows the underlying trend. When core rises too, the pressure is broad, not just a food-price blip."});
   tile(g,{label:"Core inflation", value:"3.9", unit:"% y/y", delta:"+0.2 pp", dir:"up",
@@ -876,42 +878,42 @@ function buildTbills(){
   secHead(sec,"Treasury Bills","Short-term rates, discovered fortnightly",
     'T-bills are government IOUs of a year or less, sold at a discount and repaid at face value. They are the <b>reference for all short-term money</b> — banks price deposits and short-term lending off them, and the 364-day bill is the benchmark. Auction results are the market’s fortnightly verdict on where short-term rates should sit.');
   const g=el("div","grid c4"); sec.append(g);
-  tile(g,{label:"364-day bill", value:"6.74", unit:"%", delta:"−28 bps", dir:"dn",
-    sub:"Auction 1204 · 12 Aug 2026",
-    plain:"The benchmark. Bids of TZS 330bn chased just TZS 89bn on offer (3.7× covered), pushing the yield down from 7.03%.",
+  tile(g,{label:"364-day bill", value:"6.65", unit:"%", delta:"−9 bps", dir:"dn",
+    sub:"Auction 1205 · 26 Aug 2026",
+    plain:"The benchmark. Bids of TZS 228bn chased just TZS 89bn on offer (2.6× covered), nudging the yield down from 6.74%.",
     econ:"Sits just above the 6.25% CBR — short-term money is priced tight to policy.",
     mkt:"The single most-watched rate for pricing deposits, repos and money-market funds."});
-  tile(g,{label:"182-day bill", value:"5.18", unit:"%", delta:"+40 bps", dir:"up",
-    sub:"Auction 1204 · fully taken up",
-    plain:"TZS 106bn tendered for TZS 80bn on offer. Recovering from its June low of 4.92%.",
-    econ:"The 6-month rate catching up toward the new, higher policy rate.",
+  tile(g,{label:"182-day bill", value:"5.05", unit:"%", delta:"−13 bps", dir:"dn",
+    sub:"Auction 1205 · fully taken up",
+    plain:"TZS 135bn tendered for TZS 80bn on offer (1.7× covered). Eased back after two rising auctions; still above the June low of 4.92%.",
+    econ:"Heavy demand for 6-month paper keeps the government's mid-tenor funding cheap.",
     mkt:"The gap below the 364-day (~1.6 pp) rewards going longer at the short end."});
-  tile(g,{label:"91-day bill", value:"3.44", unit:"%", delta:"undersubscribed", dir:"up",
-    sub:"Auction 1204 · TZS 60bn of 70bn taken",
+  tile(g,{label:"91-day bill", value:"3.40", unit:"%", delta:"undersubscribed", dir:"dn",
+    sub:"Auction 1205 · TZS 40bn of 70bn taken",
     plain:"Well below the CBR — banks park very short money cheaply because liquidity is plentiful at this tenor.",
     econ:"A sign of comfortable bank liquidity rather than distress.",
-    mkt:"Undersubscription here while the 364-day is 3.7× covered shows investors stretching for yield."});
-  tile(g,{label:"35-day bill", value:"2.13", unit:"%", delta:"undersubscribed", dir:"dn",
-    sub:"Auction 1204 · TZS 43bn of 50bn taken",
+    mkt:"Undersubscription here while the 364-day is 2.6× covered shows investors stretching for yield."});
+  tile(g,{label:"35-day bill", value:"2.09", unit:"%", delta:"undersubscribed", dir:"dn",
+    sub:"Auction 1205 · TZS 40bn of 50bn taken",
     plain:"The shortest tenor, mainly a cash-management tool — its yield says little about policy.",
     econ:"Very cheap month-long money for the government.",
     mkt:"Treat it as a parking rate, not a benchmark."});
   const g2=el("div","grid c3"); g2.style.marginTop="14px"; sec.append(g2);
-  tile(g2,{label:"Auction 1204 demand", value:"1.87", unit:"× covered",
-    sub:"TZS 539bn tendered vs 289bn offered",
-    plain:"Total bids nearly doubled the offer, with demand concentrated in the 364-day tenor.",
+  tile(g2,{label:"Auction 1205 demand", value:"1.53", unit:"× covered",
+    sub:"TZS 443bn tendered vs 289bn offered",
+    plain:"Bids comfortably beat the offer, though demand cooled from 1.87× at the previous auction; the 364-day tenor still drew 2.6× its offer.",
     econ:"Strong demand lets the government fund itself without paying up.",
     mkt:"Falling cover ratios would be the early warning that yields need to rise."});
   tile(g2,{label:"Interbank 7-day rate", value:"6.41", unit:"%", delta:"24 Aug", dir:"up",
     sub:"Overnight: 6.20% (21 Aug) · June avg 5.98%",
     plain:"What banks charge each other for week-long money — risen since the CBR hike, and sitting inside the ±150 bp corridor around 6.25%.",
     econ:"Proof the July hike transmitted: bank funding costs followed the CBR up.",
-    mkt:"The corridor anchor confirms T-bill yields near 6.7% are consistent with policy, not an anomaly."});
+    mkt:"The corridor anchor confirms T-bill yields near 6.65% are consistent with policy, not an anomaly."});
   tile(g2,{label:"Overall T-bill WAY", value:"4.83", unit:"%", delta:"Jun 2026", dir:"up",
     sub:"Monthly average across all tenors · MER",
     plain:"BOT's monthly average across all four tenors — dragged below the benchmark by the cheap 35- and 91-day tenors.",
     econ:"The government's blended short-term funding cost.",
-    mkt:"Compare with 6.74% on the 364-day to see how much tenor choice matters."});
+    mkt:"Compare with 6.65% on the 364-day to see how much tenor choice matters."});
   chartCard(sec,{title:"T-bill yields by auction",
     note:"Every auction since February 2025. The two short tenors (35 & 91-day) are excluded — several auctions had no successful bids.",
     series:[{name:"364-day", color:"var(--s1)", points:DATA.tbill364},
@@ -944,9 +946,9 @@ function buildMarket(){
   secHead(sec,"Market Snapshot","The wider picture",
     'The backdrop every yield trades against: the shilling, the country’s FX buffers, and how fast money and credit are growing.');
   const g=el("div","grid c3"); sec.append(g);
-  tile(g,{label:"TZS / USD", value:"2,656.67", unit:"TZS", delta:"weaker y/y", dir:"up",
-    sub:"BOT selling rate · 25 Aug 2026 (buying 2,630.37)",
-    plain:"It takes 2,657 shillings to buy a dollar — about 8% more than a year ago. On this chart, up = weaker shilling.",
+  tile(g,{label:"TZS / USD", value:"2,658.06", unit:"TZS", delta:"weaker y/y", dir:"up",
+    sub:"BOT selling rate · 27 Aug 2026 (buying 2,631.74)",
+    plain:"It takes 2,658 shillings to buy a dollar — about 8% more than a year ago. On this chart, up = weaker shilling.",
     econ:"A weaker shilling makes imports (fuel, fertiliser) pricier — one of the channels behind the inflation climb.",
     mkt:"FX weakness pressures BOT to keep policy tight, which supports higher yields."});
   tile(g,{label:"FX reserves", value:"5.67", unit:"USD bn", delta:"4.4 months cover", dir:"fl",
