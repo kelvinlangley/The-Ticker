@@ -82,7 +82,7 @@ function doPost(e) {
       new Date(), ref, p.accountName || '', (p.accountType || '') + ' → ' + (p.formVariant || ''), p.category || '', p['class'] || '',
       [h0.surname, h0.firstName, h0.middleName].filter(Boolean).join(' ') || (p.company && p.company.name) || '',
       h0.nin || '', h0.tin || (p.company && p.company.tin) || '',
-      h0.mobile ? '+255' + h0.mobile : (p.company && p.company.contact && p.company.contact.mobile) || '',
+      h0.mobile ? (h0.mobile.indexOf('+') === 0 ? h0.mobile : '+255' + h0.mobile) :(p.company && p.company.contact && p.company.contact.mobile) || '',
       h0.email || (p.company && p.company.email) || '',
       (p.bank && p.bank.bank) + ' · ' + (p.bank && p.bank.branch),
       (p.bank && p.bank.accountNumber) || '', (p.mandate && p.mandate.rule) || '',
@@ -98,7 +98,7 @@ function doPost(e) {
         'Reference:   ' + ref + '\n' +
         'Account:     ' + (p.accountName || '') + ' (' + p.accountType + ' / ' + p.category + ' / ' + p['class'] + ')\n' +
         'BOT form:    ' + (p.formVariant || '') + '\n' +
-        'Contact:     ' + (h0.mobile ? '+255' + h0.mobile : '') + '  ' + (h0.email || '') + '\n' +
+        'Contact:     ' + (h0.mobile ? (h0.mobile.indexOf('+') === 0 ? h0.mobile : '+255' + h0.mobile) :'') + '  ' + (h0.email || '') + '\n' +
         'Bank:        ' + (p.bank && (p.bank.bank + ' ' + p.bank.accountNumber)) + '\n' +
         (p.flags && p.flags.length ? '\nFLAGS TO CHECK:\n- ' + p.flags.join('\n- ') + '\n' : '') +
         '\nStill needed at branch: ' + ((p.branchChecklist || []).join('; ')) + '\n\n' +

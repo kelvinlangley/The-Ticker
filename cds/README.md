@@ -3,9 +3,9 @@
 An online **CDS securities account application** for brokerage customers who want to buy
 Government securities (Treasury bills & bonds) held in the **Bank of Tanzania Central
 Depository System (CDS)**. The paper originals are BOT forms **CDS/FORM/02A** (sole
-holder — individuals and entities), **02B** (joint, max 3 holders) and **02C** (minor via
-guardian); this form captures the union of their fields and tells the desk which variant
-to print. The Zansec online form (`zansec.co.tz/Onlineforms/cds/cds_form`) is built on
+holder — individuals and entities), **02B** (joint — three holders per sheet; more
+holders need an additional sheet) and **02C** (minor via guardian); this form captures
+the union of their fields and tells the desk which variant to print. The Zansec online form (`zansec.co.tz/Onlineforms/cds/cds_form`) is built on
 the same base form — this version restructures it so the brokerage desk receives a
 complete, verified package it can act on without calling the customer back.
 
@@ -24,7 +24,7 @@ Official form PDFs (2022 revisions where available):
 
 Seven short steps with only the questions that apply to them:
 
-1. **Account type** — Individual · Joint (2–3, per 02B) · Minor · Company/Institution.
+1. **Account type** — Individual · Joint (2–3 in the form; the desk handles more) · Minor · Company/Institution.
    BOT category & class are derived automatically (individuals) or picked from the
    official category→class list (institutions). Maps to the right form variant
    (02A/02B/02C) automatically.
@@ -120,6 +120,21 @@ Workspace tenant, for anything beyond a pilot.
    forms with reasons.
 4. BOT confirms the CDS ID + client account number to CRDB, which must relay it to the
    customer within 3 working days — the form collects mobile + e-mail for exactly this.
+
+## Known limitations
+
+- Native date inputs display in the device's locale; stored values are ISO and the
+  printable form renders DD-MM-YYYY as BOT expects, but very old browsers without date
+  pickers fall back to free-text entry.
+- Drafts keep the typed text (including ID numbers) in the browser's `localStorage` so a
+  customer can resume; they are **offered** on return, never silently applied, and images
+  and signatures are never stored. On genuinely shared computers customers should tap
+  "Discard" when prompted — a real deployment on bank infrastructure may prefer
+  server-side drafts.
+- The `SHARED_SECRET` token ships in the public page source, so it filters junk POSTs;
+  it is **not** authentication.
+- Drawn/typed signatures are provisional by design — BOT requires wet signatures
+  witnessed by the depository participant, which happens at the branch step.
 
 ## Files
 

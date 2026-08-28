@@ -89,7 +89,10 @@
   /* uploads */
   .up{border:1.5px dashed var(--border2); border-radius:var(--r); padding:12px 14px; display:flex; gap:14px; align-items:center; background:var(--card2)}
   .up.has{border-style:solid; border-color:var(--green-line); background:var(--green-soft)}
-  .up input[type=file]{display:none}
+  /* keep file inputs focusable for keyboard users (Enter/Space opens the picker) */
+  .up input[type=file]{position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; clip:rect(0 0 0 0)}
+  .up label.btn{position:relative}
+  .up label.btn:focus-within{outline:2px solid var(--green); outline-offset:2px}
   .up .thumb{width:64px; height:48px; border-radius:6px; background:#fff center/cover no-repeat; border:1px solid var(--border); flex:none; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px}
   .up .meta{flex:1; min-width:0}
   .up .meta b{display:block; font-size:13.5px}
@@ -159,7 +162,11 @@
     #print-doc .office{border:1.5px solid #000; padding:8px; margin-top:14px}
     #print-doc .office b{display:block; margin-bottom:6px}
     #print-doc .pagebreak{page-break-before:always}
+    #print-doc tr{page-break-inside:avoid}
+    #print-doc h4{page-break-after:avoid}
+    #print-doc .office,#print-doc .mandate{page-break-inside:avoid}
   }
+  .sr-live{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
 </style>
 
 <header class="mast">
@@ -183,14 +190,14 @@
       <div class="card">
         <div class="choices" id="acct-type" role="radiogroup" aria-label="Account type">
           <label class="choice"><input type="radio" name="accountType" value="individual"><b>Individual</b><span>One person, in their own name</span></label>
-          <label class="choice"><input type="radio" name="accountType" value="joint"><b>Joint</b><span>Two to four people together</span></label>
+          <label class="choice"><input type="radio" name="accountType" value="joint"><b>Joint</b><span>Two or more people together</span></label>
           <label class="choice"><input type="radio" name="accountType" value="minor"><b>Minor</b><span>A child's account, operated by a parent or guardian</span></label>
           <label class="choice"><input type="radio" name="accountType" value="company"><b>Company / Institution</b><span>A registered company, fund, NGO or other entity</span></label>
         </div>
         <div class="f" style="margin-top:14px; display:none" id="joint-count-wrap">
           <label for="jointCount">Number of joint holders</label>
           <select id="jointCount"><option value="2">2</option><option value="3">3</option></select>
-          <div class="hint">A Bank of Tanzania joint account (CDS/FORM/02B) holds at most three people; a minor cannot be a joint holder.</div>
+          <div class="hint">The BOT joint form (CDS/FORM/02B) covers three holders per sheet — for more than three, the desk attaches an additional form; contact us and we'll handle it. A minor cannot be a joint holder.</div>
         </div>
         <div class="row" style="margin-top:14px">
           <div class="f" id="f-category" style="display:none">
@@ -227,6 +234,13 @@
           <div class="f"><label>Date of incorporation</label><input type="date" id="coDate"></div>
           <div class="f"><label>Nature of business <span class="req">*</span></label><input type="text" id="coBiz" placeholder="e.g. Manufacturing, Insurance, NGO"><div class="err">Required</div></div>
           <div class="f"><label>Company TIN <span class="req">*</span></label><input type="text" id="coTin" inputmode="numeric" placeholder="123-456-789"><div class="err">TIN is 9–10 digits, e.g. 123-456-789</div></div>
+          <div class="f"><label>TIN — place of issue</label><input type="text" id="coTinIssue" placeholder="TRA region / office"></div>
+          <div class="f"><label>Country of incorporation <span class="req">*</span></label><select id="coNationality"></select></div>
+          <div class="f"><label>Country of residence <span class="req">*</span></label><select id="coResidence"></select></div>
+          <div class="f"><label>Tax status</label>
+            <select id="coTaxStatus"><option>Not Exempt</option><option>Exempt</option></select>
+            <div class="hint">If exempt (e.g. a pension fund), upload the TRA exemption certificate in the Documents step.</div>
+          </div>
           <div class="f wide"><label>Registered / postal address <span class="req">*</span></label><input type="text" id="coPostal" placeholder="P.O. Box …, City"><div class="err">Required</div></div>
           <div class="f wide"><label>Physical address <span class="req">*</span></label><input type="text" id="coPhysical" placeholder="Plot, street, district, region"><div class="err">Required</div></div>
           <div class="f"><label>Office telephone <span class="req">*</span></label><input type="tel" id="coTel"><div class="err">Required</div></div>
@@ -237,8 +251,8 @@
           <div class="f"><label>Full name <span class="req">*</span></label><input type="text" id="coContactName"><div class="err">Required</div></div>
           <div class="f"><label>Position <span class="req">*</span></label><input type="text" id="coContactRole"><div class="err">Required</div></div>
           <div class="f"><label>Mobile <span class="req">*</span></label>
-            <div class="prefix"><span class="pfx">+255</span><input type="tel" id="coContactPhone" inputmode="numeric" maxlength="9" placeholder="7XXXXXXXX"></div>
-            <div class="err">9 digits starting with 6 or 7</div></div>
+            <div class="prefix"><span class="pfx">+255</span><input type="tel" id="coContactPhone" inputmode="tel" placeholder="7XXXXXXXX"></div>
+            <div class="err">Enter 9 digits starting with 6/7, or a full international number starting with +</div></div>
         </div>
       </div>
       <div class="card">
@@ -278,6 +292,9 @@
             <label class="check" style="margin:8px 0 0"><input type="checkbox" id="sameName" checked> Same as the CDS account name</label>
             <div class="err">Required — and it must match the CDS account name</div>
           </div>
+          <div class="f"><label>Branch postal address <span class="hint" style="display:inline">(if known)</span></label><input type="text" id="bankPostal"></div>
+          <div class="f"><label>Branch telephone <span class="hint" style="display:inline">(if known)</span></label><input type="tel" id="bankTel"></div>
+          <div class="f"><label>Branch e-mail <span class="hint" style="display:inline">(if known)</span></label><input type="email" id="bankEmail"></div>
         </div>
         <div class="note" id="bank-match-note" style="display:none"></div>
         <div class="note warn" id="bank-minor-note" style="display:none"><b>Minor's account:</b> the Bank of Tanzania requires the settlement bank account to be <b>the child's own</b> — the account number and account name must be the minor's, matching the CDS account name. If the child doesn't have a bank account yet, open one first.</div>
@@ -320,7 +337,7 @@
         </p>
         <label class="check" id="c-mandate"><input type="checkbox" data-decl> <span><b>I/We agree to the mandate above.</b></span></label>
         <label class="check" id="c-true"><input type="checkbox" data-decl> <span><b>I/We declare that the information given is complete and true</b> and will notify CRDB in writing of any change in these particulars.</span></label>
-        <label class="check" id="c-pdpa"><input type="checkbox" data-decl> <span><b>Consent to use of personal data:</b> I/We consent to CRDB and the Bank of Tanzania collecting and processing the personal data in this form — including identity documents and specimen signatures — solely for opening and operating the CDS securities account, meeting know-your-customer and anti-money-laundering obligations, and related regulatory reporting, in line with the Personal Data Protection Act, 2022. I/We may contact CRDB to access or correct this data.</span></label>
+        <label class="check" id="c-pdpa"><input type="checkbox" data-decl> <span><b>Consent to use of personal data:</b> I/We consent to CRDB and the Bank of Tanzania collecting and processing the personal data in this form — including identity documents and specimen signatures — solely for opening and operating the CDS securities account, meeting know-your-customer and anti-money-laundering obligations, and related regulatory reporting, in line with the Personal Data Protection Act, 2022 — and, where the processing systems are hosted outside Tanzania, to the transfer of this data abroad under appropriate safeguards. I/We may contact CRDB to access, correct or ask for deletion of this data, or withdraw this consent, at any time.</span></label>
         <div class="err" id="decl-err" style="display:none; color:var(--bad); font-size:12.5px; font-weight:600">Please tick all three declarations to continue.</div>
       </div>
       <div class="card">
@@ -338,6 +355,7 @@
       <div class="card">
         <div class="navbtns" style="margin:0">
           <button type="button" class="btn" id="btn-print-blank">Print / save as PDF</button>
+          <button type="button" class="btn" id="btn-json-review">Download data file (JSON)</button>
           <div class="spacer"></div>
           <button type="button" class="btn primary" id="btn-submit">Submit application</button>
         </div>
@@ -399,8 +417,10 @@ const CONFIG = {
   // Reference number prefix.
   REF_PREFIX: "CRDB-CDS",
 
-  // Optional shared secret echoed in every payload so the receiver can drop
-  // junk POSTs to a public endpoint (set the same value in the Apps Script).
+  // Optional token echoed in every payload so the receiver can drop junk
+  // POSTs to a public endpoint (set the same value in the Apps Script).
+  // NOTE: it ships in this public page, so it is a spam filter, NOT
+  // authentication — anyone who reads the source can see it.
   SHARED_SECRET: "",
 
   // Max pixel dimension for compressed images (bigger = sharper but heavier).
@@ -408,15 +428,16 @@ const CONFIG = {
   IMG_QUALITY: 0.85,
 };
 
-/* ════════ BOT CDS/FORM/02 category → class map (verbatim) ════════ */
+/* ════════ Annex to CDS Form 2A/2B/2C — Account Holder Categories (verbatim) ════════ */
 const CATEGORY_CLASS = {
-  "Individuals": ["Individual","Joint","Minor"],
-  "Banks": ["Commercial Bank","Community Bank","Development Bank"],
-  "Government Agencies": ["Central Government","Local Government","Parastatal"],
+  "Bank of Tanzania": ["BOT Open Market Operations","BOT Special Funds"],
+  "Government Agencies": ["Central Government","Government of Zanzibar","Local Governments","Parastatals"],
+  "Banks": ["Non-Banks Financial Institution","Regional Banks","Community Banks","Deposit Money Banks"],
   "Trust Companies": ["Pensions Funds","Provident Funds","Unit Trust","Social Security Regulatory Authority"],
   "Insurance Companies": ["Commissioner of Insurance","Insurance Company","Insurance Broker"],
   "Other Financial Institutions": ["Credit Institution","Bureau De Change"],
   "Market Intermediaries": ["Authorized Dealer","Capital Markets and Securities Authority","Dar es salaam Stock Exchange","Mortgage Finance Company","Broker"],
+  "Individuals": ["Individual","Joint","Minor"],
   "Others": ["Manufacturing Firm","Commercial Enterprise","Non-Government Organization (NGO)","Social Group","Religious Group","Educational Group","Micro-Finance Institution","Co-operative","Other Official Entities","Medical Health Schemes","Professional Organization","Health Institution"]
 };
 
@@ -432,15 +453,43 @@ const el = (t,c,h)=>{const n=document.createElement(t); if(c)n.className=c; if(h
 const esc = s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const todayISO = ()=>new Date().toISOString().slice(0,10);
 
+/* ════════ accessibility helpers ════════ */
+let fldSeq=0;
+function associateLabels(root){
+  $$(".f",root||document).forEach(f=>{
+    const lab=f.querySelector(":scope > label");
+    const inp=f.querySelector("input,select,textarea");
+    if(!lab||!inp) return;
+    if(!inp.id) inp.id="fld-"+(++fldSeq);
+    lab.htmlFor=inp.id;
+  });
+}
+function announce(msg){
+  let live=document.getElementById("sr-live");
+  if(!live){ live=el("div","sr-live"); live.id="sr-live"; live.setAttribute("role","alert"); document.body.append(live); }
+  live.textContent=""; requestAnimationFrame(()=>{ live.textContent=msg; });
+}
+function focusFirstInvalid(){
+  const act=$(".step.active"); if(!act) return;
+  const bad=$(".f.invalid input,.f.invalid select,.f.invalid textarea,.check.invalid input",act);
+  if(bad){
+    bad.scrollIntoView({block:"center",behavior:"smooth"});
+    try{ bad.focus({preventScroll:true}); }catch(e){}
+  }
+  announce("Please correct the highlighted fields before continuing.");
+}
+
 /* ════════ validators ════════ */
 const V = {
   nin: v=>/^\d{20}$/.test(v.replace(/[\s-]/g,"")),
   tin: v=>/^\d{9,10}$/.test(v.replace(/[\s-]/g,"")),
-  mobileTz: v=>/^[67]\d{8}$/.test(v.replace(/\s/g,"")),
+  // Tanzanian mobile (9 digits, 6/7 prefix) OR any international number entered with +
+  mobile: v=>{ v=v.replace(/\s/g,""); return /^[67]\d{8}$/.test(v) || /^\+[1-9]\d{7,14}$/.test(v); },
   email: v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v),
   acctNo: v=>/^\d{10,16}$/.test(v.replace(/[\s-]/g,"")),
   notEmpty: v=>String(v||"").trim().length>0,
 };
+const fmtMobile = v=>{ v=(v||"").replace(/\s/g,""); return !v?"":(v.startsWith("+")?v:"+255"+v); };
 const fmtTin = v=>{const d=v.replace(/\D/g,"").slice(0,10); return d.replace(/(\d{3})(\d{1,3})?(\d{1,4})?/, (_,a,b,c)=>[a,b,c].filter(Boolean).join("-"));};
 const fmtNin = v=>{const d=v.replace(/\D/g,"").slice(0,20); return [d.slice(0,8),d.slice(8,13),d.slice(13,18),d.slice(18,20)].filter(Boolean).join("-");};
 
@@ -448,10 +497,23 @@ const fmtNin = v=>{const d=v.replace(/\D/g,"").slice(0,20); return [d.slice(0,8)
 class SigPad{
   constructor(canvas){
     this.c=canvas; this.ctx=canvas.getContext("2d"); this.empty=true; this.drawing=false;
+    this.dist=0; this.last=null; // a stray tap must not count as a signature
     this._resize(); new ResizeObserver(()=>this._resize()).observe(canvas);
-    canvas.addEventListener("pointerdown",e=>{try{canvas.setPointerCapture(e.pointerId);}catch(_){} this.drawing=true; const p=this._pt(e); this.ctx.beginPath(); this.ctx.moveTo(p.x,p.y); this.ctx.lineTo(p.x+0.1,p.y+0.1); this.ctx.stroke(); this._mark();});
-    canvas.addEventListener("pointermove",e=>{if(!this.drawing)return; const p=this._pt(e); this.ctx.lineTo(p.x,p.y); this.ctx.stroke();});
-    ["pointerup","pointercancel"].forEach(ev=>canvas.addEventListener(ev,()=>{this.drawing=false;}));
+    canvas.addEventListener("pointerdown",e=>{try{canvas.setPointerCapture(e.pointerId);}catch(_){} this.drawing=true; const p=this._pt(e); this.last=p; this.ctx.beginPath(); this.ctx.moveTo(p.x,p.y); this.ctx.lineTo(p.x+0.1,p.y+0.1); this.ctx.stroke();});
+    canvas.addEventListener("pointermove",e=>{if(!this.drawing)return; const p=this._pt(e); this.ctx.lineTo(p.x,p.y); this.ctx.stroke();
+      if(this.last){ this.dist+=Math.hypot(p.x-this.last.x,p.y-this.last.y); } this.last=p;
+      if(this.dist>=20) this._mark();});
+    ["pointerup","pointercancel"].forEach(ev=>canvas.addEventListener(ev,()=>{this.drawing=false; this.last=null;}));
+  }
+  type(name){
+    const r=this.c.getBoundingClientRect();
+    this.ctx.clearRect(0,0,r.width,r.height);
+    this.ctx.save();
+    this.ctx.font="italic 600 32px Georgia, 'Times New Roman', serif";
+    this.ctx.textAlign="center"; this.ctx.textBaseline="middle"; this.ctx.fillStyle="#101820";
+    this.ctx.fillText(name, r.width/2, r.height/2, r.width-24);
+    this.ctx.restore();
+    this.dist=999; this._mark();
   }
   _resize(){
     const r=this.c.getBoundingClientRect(); if(!r.width) return;
@@ -463,7 +525,7 @@ class SigPad{
   }
   _pt(e){const r=this.c.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top};}
   _mark(){if(this.empty){this.empty=false; this.c.closest(".sig").classList.add("has"); saveDraftSoon();}}
-  clear(){const r=this.c.getBoundingClientRect(); this.ctx.clearRect(0,0,r.width,r.height); this.empty=true; this.c.closest(".sig").classList.remove("has");}
+  clear(){const r=this.c.getBoundingClientRect(); this.ctx.clearRect(0,0,r.width,r.height); this.empty=true; this.dist=0; this.c.closest(".sig").classList.remove("has");}
   dataURL(){return this.empty?null:this.c.toDataURL("image/png");}
 }
 
@@ -490,9 +552,11 @@ function drawStepper(){
     b.addEventListener("click",()=>{ if(i<=state.maxStep) go(i); });
     host.append(b);
   });
+  const act=$(".active",host);
+  if(act) act.scrollIntoView({inline:"center",block:"nearest"});
 }
 function go(n){
-  if(n>state.step){ for(let i=state.step;i<n;i++){ if(!validateStep(i)) { showStep(i); return; } } }
+  if(n>state.step){ for(let i=state.step;i<n;i++){ if(!validateStep(i)) { showStep(i); focusFirstInvalid(); return; } } }
   showStep(n);
 }
 function showStep(n){
@@ -571,9 +635,11 @@ function renderHolders(){
   const host=$("#holders");
   $("#company-card").style.display = t==="company"?"block":"none";
   const n = t==="company" ? 0 : (t==="minor"?2:holderCount());
-  const existing=$$(".holder",host).length;
-  if(existing!==n){ host.textContent=""; for(let i=0;i<n;i++) host.append(holderBlock(i)); }
-  else $$(".holder",host).forEach((b,i)=>{ $(".block-head b",b).textContent=holderTitle(i); tuneHolder(b,i); });
+  // grow/shrink without wiping what's already typed
+  const blocks=$$(".holder",host);
+  blocks.slice(n).forEach(b=>b.remove());
+  for(let i=blocks.length;i<n;i++) host.append(holderBlock(i));
+  $$(".holder",host).forEach((b,i)=>{ b.dataset.i=i; $(".block-head b",b).textContent=holderTitle(i); tuneHolder(b,i); });
   $("#h-applicant").textContent = t==="company"?"Company & contact details" : t==="joint"?"Joint holders' details" : t==="minor"?"Child & guardian details":"Your details";
   updateAccountName();
 }
@@ -594,8 +660,10 @@ function holderBlock(i){
       </div>
       <div class="note resid-note" style="display:none"></div>
       <div class="row">
-        <div class="f"><label class="nin-label">NIDA National ID No. <span class="req nin-req">*</span></label><input type="text" data-k="nin" inputmode="numeric" placeholder="XXXXXXXX-XXXXX-XXXXX-XX"><div class="err">NIN is 20 digits</div></div>
+        <div class="f"><label class="nin-label">NIDA National ID No. <span class="req nin-req">*</span></label><input type="text" data-k="nin" inputmode="numeric" placeholder="XXXXXXXX-XXXXX-XXXXX-XX"><div class="err">NIN is 20 digits — or provide a passport, voter ID or driving licence below</div></div>
         <div class="f"><label>TIN <span class="tin-req-wrap"><span class="req">*</span></span></label><input type="text" data-k="tin" inputmode="numeric" placeholder="123-456-789"><div class="err">TIN is 9–10 digits</div><div class="hint tin-hint"></div></div>
+        <div class="f"><label>TIN — place of issue</label><input type="text" data-k="tinIssue" placeholder="TRA region / office"></div>
+        <div class="f"><label>Own existing CDS ID <span class="hint" style="display:inline">(if this person already has one)</span></label><input type="text" data-k="cdsId" autocomplete="off"></div>
         <div class="f"><label>Passport No. <span class="pp-req" style="display:none"><span class="req">*</span></span></label><input type="text" data-k="passport" autocomplete="off"><div class="err">Required for non-residents without NIDA</div></div>
         <div class="f"><label>Passport — place of issue</label><input type="text" data-k="passportIssue"></div>
         <div class="f"><label>Passport expiry</label><input type="date" data-k="passportExpiry"><div class="err">Passport looks expired</div></div>
@@ -614,8 +682,9 @@ function holderBlock(i){
       </div>
       <div class="row c3">
         <div class="f"><label>Mobile <span class="req">*</span></label>
-          <div class="prefix"><span class="pfx">+255</span><input type="tel" data-k="mobile" inputmode="numeric" maxlength="9" placeholder="7XXXXXXXX"></div>
-          <div class="err">9 digits starting with 6 or 7 (foreign numbers: use the e-mail field and note it)</div></div>
+          <div class="prefix"><span class="pfx">+255</span><input type="tel" data-k="mobile" inputmode="tel" placeholder="7XXXXXXXX"></div>
+          <div class="hint">Tanzanian: 9 digits starting 6 or 7. Foreign number? Type it in full with + (e.g. +447700900123) — the +255 is ignored then.</div>
+          <div class="err">Enter 9 digits starting with 6/7, or a full international number starting with +</div></div>
         <div class="f"><label>Other phone</label><input type="tel" data-k="phone2"></div>
         <div class="f"><label>E-mail <span class="req">*</span></label><input type="email" data-k="email"><div class="err">Enter a valid e-mail</div></div>
       </div>
@@ -630,6 +699,7 @@ function holderBlock(i){
     COUNTRIES.forEach(c=>sel.append(new Option(c,c))); sel.value="Tanzania";
   });
   tuneHolder(b,i);
+  associateLabels(b);
   return b;
 }
 function tuneHolder(b,i){
@@ -700,11 +770,13 @@ function uploadSpec(){
     specs.push(
       {key:"cert_incorp", label:"Certificate of incorporation / registration", req:true},
       {key:"co_tin", label:"Company TIN certificate", req:true},
+      {key:"business_licence", label:"Business licence", req:true},
       {key:"board_resolution", label:"Board resolution appointing signatories", req:true},
-      {key:"memarts", label:"Memorandum & Articles (or constitution)", req:false},
+      {key:"memarts", label:"Memorandum & Articles / constitution / charter", req:true},
       {key:"sig_ids", label:"Authorised signatories' NIDA cards / passports (combined photo or PDF)", req:true},
-      {key:"sig_photos", label:"Signatories' passport-size photos (combined)", req:false},
+      {key:"sig_photos", label:"Directors'/signatories' passport-size photos (combined)", req:true},
     );
+    if($("#coTaxStatus").value==="Exempt") specs.push({key:"tax_exempt_co", label:"TRA tax exemption certificate", req:true});
   }
   holders.forEach((b,i)=>{
     const isChild = t==="minor" && i===0;
@@ -714,11 +786,11 @@ function uploadSpec(){
       specs.push({key:`birth_cert`, label:"Child's birth certificate", req:true});
       specs.push({key:`guardian_proof`, label:"Proof of guardianship (required if the guardian is not a natural parent)", req:false});
     }
-    specs.push({key:`photo_${i}`, label:`${who} — passport-size photo`, req:!isChild});
+    specs.push({key:`photo_${i}`, label:`${who} — passport-size photo (coloured)`, req:true});
+    specs.push({key:`tin_cert_${i}`, label:`${who} — TIN certificate`, req:!isChild});
     const tax=$("select[data-k=taxStatus]",b);
     if(tax && tax.value==="Exempt") specs.push({key:`tax_exempt_${i}`, label:`${who} — TRA tax exemption certificate`, req:true});
   });
-  if(t!=="company") specs.push({key:"tin_cert", label:"TIN certificate (any holder)", req:false});
   return specs;
 }
 function buildUploads(){
@@ -784,23 +856,41 @@ function defaultSignatories(){
     capacity: t==="minor"?"Parent / Guardian":"Account holder",
   }));
 }
-let signatoriesBuilt=false;
+let signatoriesBuilt=false, pendingDraftSignatories=null;
 function buildSignatories(force){
   const host=$("#signatories");
+  const defs=defaultSignatories();
   if(signatoriesBuilt && !force){
-    // refresh prefill names only if fields are still empty
+    // holders' names may have been corrected — refresh prefilled blocks the user hasn't edited
+    $$(".signatory",host).forEach((b,i)=>{
+      if(i>=defs.length || b.dataset.custom==="1") return;
+      ["surname","firstName","middleName","capacity"].forEach(k=>{
+        const inp=$(`[data-k="${k}"]`,b);
+        if(inp && inp.dataset.touched!=="1") inp.value=defs[i][k]||"";
+      });
+    });
     return;
   }
   host.textContent=""; state.sigs={};
-  defaultSignatories().forEach((s,i)=>host.append(signatoryBlock(s,i)));
+  const removablePrefill = accountType()==="company"; // holder-derived signatories must all sign
+  defs.forEach((s,i)=>{
+    if(pendingDraftSignatories && pendingDraftSignatories[i]) s={...s,...pendingDraftSignatories[i]};
+    host.append(signatoryBlock(s,i, removablePrefill && i>0));
+  });
+  if(pendingDraftSignatories){
+    for(let i=defs.length;i<Math.min(pendingDraftSignatories.length,4);i++){
+      const b=signatoryBlock(pendingDraftSignatories[i],i,true); b.dataset.custom="1"; host.append(b);
+    }
+    pendingDraftSignatories=null;
+  }
   signatoriesBuilt=true;
   updateAddButton();
 }
-function signatoryBlock(s,i){
+function signatoryBlock(s,i,removable){
   const b=el("div","block signatory");
   b.innerHTML=`
     <div class="block-head"><b>Signatory ${String.fromCharCode(65+i)}</b>
-      ${i>0?'<button type="button" class="btn small ghost sig-del">Remove</button>':""}</div>
+      ${removable?'<button type="button" class="btn small ghost sig-del">Remove</button>':""}</div>
     <div class="block-body">
       <div class="row c3">
         <div class="f"><label>Surname <span class="req">*</span></label><input type="text" data-k="surname" value="${esc(s.surname)}"><div class="err">Required</div></div>
@@ -812,15 +902,24 @@ function signatoryBlock(s,i){
       </div>
       <div class="f"><label>Specimen signature <span class="req">*</span></label>
         <div class="sig"><canvas></canvas><div class="ph">Sign here</div></div>
-        <div class="sig-row"><span class="who">Sign inside the box</span><button type="button" class="btn small sig-clear">Clear</button></div>
+        <div class="sig-row"><span class="who">Sign inside the box</span>
+          <span><button type="button" class="btn small ghost sig-type">Can't draw? Type it</button>
+          <button type="button" class="btn small sig-clear">Clear</button></span></div>
         <div class="err">A signature is required</div>
       </div>
     </div>`;
   const pad=new SigPad($("canvas",b));
   state.sigs["sig_"+i]=pad;
   $(".sig-clear",b).addEventListener("click",()=>pad.clear());
+  $(".sig-type",b).addEventListener("click",()=>{
+    const name=window.prompt("Type your full name — it becomes your provisional signature (you'll sign in ink at the branch):",
+      [$("input[data-k=firstName]",b).value,$("input[data-k=surname]",b).value].filter(Boolean).join(" "));
+    if(name && name.trim()) pad.type(name.trim());
+  });
   const del=$(".sig-del",b);
   if(del) del.addEventListener("click",()=>{ b.remove(); reindexSignatories(); });
+  $$("input[data-k]",b).forEach(inp=>inp.addEventListener("input",()=>inp.dataset.touched="1"));
+  associateLabels(b);
   return b;
 }
 function reindexSignatories(){
@@ -839,7 +938,9 @@ function updateAddButton(){
 }
 $("#add-signatory").addEventListener("click",()=>{
   const n=$$("#signatories .signatory").length; if(n>=4) return;
-  $("#signatories").append(signatoryBlock({surname:"",firstName:"",middleName:"",capacity:""},n));
+  const b=signatoryBlock({surname:"",firstName:"",middleName:"",capacity:""},n,true);
+  b.dataset.custom="1";
+  $("#signatories").append(b);
   updateAddButton();
 });
 
@@ -856,7 +957,7 @@ function validateStep(n){
     if(t==="company"){
       ["coName","coReg","coBiz","coPostal","coPhysical","coTel"].forEach(id=>need($("#"+id),V.notEmpty));
       need($("#coEmail"),V.email); need($("#coTin"),V.tin);
-      need($("#coContactName"),V.notEmpty); need($("#coContactRole"),V.notEmpty); need($("#coContactPhone"),V.mobileTz);
+      need($("#coContactName"),V.notEmpty); need($("#coContactRole"),V.notEmpty); need($("#coContactPhone"),V.mobile);
     }
     $$("#holders .holder").forEach((b,i)=>{
       const isChild = t==="minor" && i===0;
@@ -869,17 +970,20 @@ function validateStep(n){
       need($("input[data-k=postal]",b),V.notEmpty);
       need($("input[data-k=physical]",b),V.notEmpty);
       if(!isChild){
-        need($("input[data-k=mobile]",b),V.mobileTz);
+        need($("input[data-k=mobile]",b),V.mobile);
         need($("input[data-k=email]",b),V.email);
       }
       if(t==="minor" && i===1) need($("input[data-k=relationship]",b),V.notEmpty);
-      // identity: NIDA required for Tanzania residents; otherwise NIN or passport
-      const res=$("select[data-k=residence]",b).value;
+      // identity: at least one government ID per adult (BOT accepts NIN, passport, voter ID or driving licence)
       const nin=$("input[data-k=nin]",b), pp=$("input[data-k=passport]",b);
       const hasNin=V.nin(nin.value), hasPp=V.notEmpty(pp.value);
-      if(isChild){ setInvalid(nin, nin.value && !hasNin); }
-      else if(res==="Tanzania"){ ok = setInvalid(nin,!hasNin) && ok; }
-      else { const idOK=hasNin||hasPp; setInvalid(nin, nin.value && !hasNin); ok = setInvalid(pp, !idOK) && ok; }
+      const hasAlt=hasPp||V.notEmpty($("input[data-k=voterId]",b).value)||V.notEmpty($("input[data-k=license]",b).value);
+      if(isChild){ setInvalid(nin, nin.value && !hasNin); if(nin.value && !hasNin) ok=false; }
+      else{
+        const idOK=hasNin||hasAlt;
+        setInvalid(nin, (nin.value && !hasNin) || !idOK);
+        if((nin.value && !hasNin) || !idOK) ok=false;
+      }
       // passport expiry
       const ppx=$("input[data-k=passportExpiry]",b);
       setInvalid(ppx, hasPp && ppx.value && ppx.value<todayISO());
@@ -949,15 +1053,20 @@ function buildPayload(){
     accountNumber:$("#bankAcct").value.replace(/\s/g,""),
     accountName:$("#bankAcctName").value.trim(),
     currency:$("#bankCcy").value,
+    postal:$("#bankPostal").value.trim(), tel:$("#bankTel").value.trim(), email:$("#bankEmail").value.trim(),
   };
   const company = t==="company" ? {
     name:$("#coName").value.trim(), regNumber:$("#coReg").value.trim(), incDate:$("#coDate").value,
-    business:$("#coBiz").value.trim(), tin:$("#coTin").value.trim(), postal:$("#coPostal").value.trim(),
+    business:$("#coBiz").value.trim(), tin:$("#coTin").value.trim(), tinIssue:$("#coTinIssue").value.trim(),
+    nationality:$("#coNationality").value, residence:$("#coResidence").value, taxStatus:$("#coTaxStatus").value,
+    postal:$("#coPostal").value.trim(),
     physical:$("#coPhysical").value.trim(), tel:$("#coTel").value.trim(), email:$("#coEmail").value.trim(),
-    contact:{name:$("#coContactName").value.trim(), role:$("#coContactRole").value.trim(), mobile:"+255"+$("#coContactPhone").value.trim()},
+    contact:{name:$("#coContactName").value.trim(), role:$("#coContactRole").value.trim(), mobile:fmtMobile($("#coContactPhone").value)},
   } : null;
+  // only attachments the CURRENT spec knows — orphans from changed selections stay out
+  const validKeys=new Set(uploadSpec().map(s=>s.key));
   const attachments={};
-  Object.entries(state.files).forEach(([k,f])=>attachments[k]={name:f.name, dataURL:f.dataURL});
+  Object.entries(state.files).forEach(([k,f])=>{ if(validKeys.has(k)) attachments[k]={name:f.name, dataURL:f.dataURL}; });
   const formVariant = t==="joint" ? "CDS/FORM/02B" : t==="minor" ? "CDS/FORM/02C" : "CDS/FORM/02A";
   const branchChecklist=[
     "Sign the specimen signature card in ink before a CRDB officer (witnessed)",
@@ -1018,15 +1127,18 @@ function buildReview(){
     ["Name", esc([h.surname,h.firstName,h.middleName].filter(Boolean).join(" "))],
     ["Date of birth", esc(h.dob)],
     ["Nationality / residence", esc(h.nationality+" · "+h.residence+" ("+h.residency+")")],
-    ["NIDA NIN", esc(h.nin)||null],
-    ["TIN", esc(h.tin)||null],
+    ["NIDA NIN", esc(h.nin)||"—"],
+    ["TIN", esc([h.tin,h.tinIssue].filter(Boolean).join(" · "))||null],
+    ["Own CDS ID", esc(h.cdsId)||"— none"],
     ["Passport", h.passport?esc(h.passport+(h.passportExpiry?" · exp "+h.passportExpiry:"")):"—"],
-    ["Contact", esc([h.mobile?"+255"+h.mobile:"",h.email].filter(Boolean).join(" · "))],
+    ["Contact", esc([fmtMobile(h.mobile),h.email].filter(Boolean).join(" · "))],
     ["Postal / physical", esc(h.postal)+"<br>"+esc(h.physical)],
     ["Tax status", esc(h.taxStatus)],
   ],1));
   if(p.company) sec("Company",[
-    ["Name",esc(p.company.name)],["Reg. No.",esc(p.company.regNumber)],["TIN",esc(p.company.tin)],
+    ["Name",esc(p.company.name)],["Reg. No.",esc(p.company.regNumber)],["TIN",esc([p.company.tin,p.company.tinIssue].filter(Boolean).join(" · "))],
+    ["Incorporated in / resident in",esc(p.company.nationality+" / "+p.company.residence)],
+    ["Tax status",esc(p.company.taxStatus)],
     ["Business",esc(p.company.business)],["Contact person",esc(p.company.contact.name+" ("+p.company.contact.role+") · "+p.company.contact.mobile)],
     ["Addresses",esc(p.company.postal)+"<br>"+esc(p.company.physical)],
     ["Phone / e-mail",esc(p.company.tel+" · "+p.company.email)],
@@ -1039,6 +1151,7 @@ function buildReview(){
     ["Bank / branch", esc(p.bank.bank+" · "+p.bank.branch)],
     ["Account", esc(p.bank.accountNumber+" ("+p.bank.currency+")")],
     ["Account name", esc(p.bank.accountName)],
+    ["Branch contact", esc([p.bank.postal,p.bank.tel,p.bank.email].filter(Boolean).join(" · "))||"— not provided"],
   ],3);
   sec("Mandate & signatories",[
     ["Operating rule", {"any-one":"Any one to sign","any-two":"Any two jointly","all":"All jointly"}[p.mandate.rule]],
@@ -1074,13 +1187,14 @@ function buildPrintDoc(){
     ${row("Name",esc([h.surname,h.firstName,h.middleName].filter(Boolean).join(" ")))}
     ${row("Role",esc(h.role))}${row("Date of birth",dmy(h.dob))}
     ${row("Nationality",esc(h.nationality))}${row("Country of residence",esc(h.residence)+" — "+esc(h.residency))}
-    ${row("NIDA NIN",esc(h.nin))}${row("TIN",esc(h.tin))}
+    ${row("NIDA NIN",esc(h.nin))}${row("TIN & place of issue",esc([h.tin,h.tinIssue].filter(Boolean).join(" · ")))}
+    ${row("Own CDS ID (if any)",esc(h.cdsId))}
     ${row("Passport No. & place of issue",esc([h.passport,h.passportIssue].filter(Boolean).join(" · "))+(h.passportExpiry?" · expires "+dmy(h.passportExpiry):""))}
     ${row("Voter ID / Driving licence",esc([h.voterId,h.license].filter(Boolean).join(" / ")))}
     ${h.relationship?row("Relationship to the minor",esc(h.relationship)):""}
     ${row("Occupation / employer / employment ID",esc([h.occupation,h.employer,h.employmentId].filter(Boolean).join(" / ")))}
     ${row("Postal address",esc(h.postal))}${row("Physical address",esc(h.physical))}
-    ${row("Mobile / other phone",esc([h.mobile?"+255"+h.mobile:"",h.phone2].filter(Boolean).join(" / ")))}
+    ${row("Mobile / other phone",esc([fmtMobile(h.mobile),h.phone2].filter(Boolean).join(" / ")))}
     ${row("E-mail",esc(h.email))}${row("Tax status",esc(h.taxStatus))}
   </table>`;
   let html=`
@@ -1098,8 +1212,11 @@ function buildPrintDoc(){
     ${p.holders.map(holderTbl).join("")}
     ${p.company?`<table>
       ${row("Company",esc(p.company.name))}${row("Registration No.",esc(p.company.regNumber))}
-      ${row("Date of incorporation",esc(p.company.incDate))}${row("Nature of business",esc(p.company.business))}
-      ${row("Company TIN",esc(p.company.tin))}${row("Postal / physical address",esc(p.company.postal)+" · "+esc(p.company.physical))}
+      ${row("Date of incorporation",dmy(p.company.incDate))}${row("Nature of business",esc(p.company.business))}
+      ${row("Company TIN & place of issue",esc([p.company.tin,p.company.tinIssue].filter(Boolean).join(" · ")))}
+      ${row("Country of incorporation / residence",esc(p.company.nationality+" / "+p.company.residence))}
+      ${row("Tax status",esc(p.company.taxStatus))}
+      ${row("Postal / physical address",esc(p.company.postal)+" · "+esc(p.company.physical))}
       ${row("Telephone / e-mail",esc(p.company.tel)+" · "+esc(p.company.email))}
       ${row("Contact person",esc(p.company.contact.name+" ("+p.company.contact.role+") "+p.company.contact.mobile))}
     </table>`:""}
@@ -1108,6 +1225,7 @@ function buildPrintDoc(){
       ${row("Bank",esc(p.bank.bank))}${row("Branch",esc(p.bank.branch))}
       ${row("Account number",esc(p.bank.accountNumber))}${row("Account name",esc(p.bank.accountName))}
       ${row("Currency",esc(p.bank.currency))}
+      ${row("Branch postal address",esc(p.bank.postal))}${row("Branch telephone / e-mail",esc([p.bank.tel,p.bank.email].filter(Boolean).join(" · ")))}
     </table>
     <h4>3. PERSONS AUTHORISED TO OPERATE THE CDS SECURITIES ACCOUNT</h4>
     <table><tr><th style="width:6%">No.</th><th>Surname</th><th>First name</th><th>Middle name</th><th>Capacity</th><th>Specimen signature</th></tr>
@@ -1129,9 +1247,9 @@ function buildPrintDoc(){
     </div>
     <div class="pagebreak"></div>
     <h4>ATTACHED DOCUMENTS</h4>`;
-  Object.entries(state.files).forEach(([k,f])=>{
-    const spec=uploadSpec().find(s=>s.key===k);
-    html+=`<p><b>${esc(spec?spec.label:k)}</b> — ${esc(f.name)}<br>${f.dataURL.startsWith("data:image")?`<img class="photoimg" src="${f.dataURL}">`:"(PDF attached in the data file)"}</p>`;
+  uploadSpec().forEach(spec=>{
+    const f=state.files[spec.key]; if(!f) return;
+    html+=`<p><b>${esc(spec.label)}</b> — ${esc(f.name)}<br>${f.dataURL.startsWith("data:image")?`<img class="photoimg" src="${f.dataURL}">`:"(PDF attached in the data file)"}</p>`;
   });
   $("#print-doc").innerHTML=html;
 }
@@ -1139,7 +1257,7 @@ function doPrint(){ buildPrintDoc(); window.print(); }
 
 /* ════════ submit ════════ */
 async function submit(){
-  for(let i=0;i<=5;i++){ if(!validateStep(i)){ showStep(i); return; } }
+  for(let i=0;i<=5;i++){ if(!validateStep(i)){ showStep(i); focusFirstInvalid(); return; } }
   state.ref = state.ref || makeRef();
   const payload=buildPayloadWithFlags();
   const btn=$("#btn-submit"); btn.disabled=true; btn.textContent="Submitting…";
@@ -1154,7 +1272,14 @@ async function submit(){
   }
   btn.disabled=false; btn.textContent="Submit application";
   if(CONFIG.SUBMIT_ENDPOINT && !delivered){
-    alert("Could not deliver the application ("+err+"). Your data is still on this page — use “Print / save as PDF” and “Download data file”, and e-mail both to "+CONFIG.DESK_EMAIL+".");
+    // delivery failed: stay on the review step with everything intact so the
+    // customer can retry — never show the success panel or clear the draft
+    const warn=$("#review-warnings");
+    warn.style.display="block";
+    warn.innerHTML="<b>We couldn't deliver your application ("+esc(err||"network error")+").</b> Nothing is lost — your answers are still here. Try <b>Submit</b> again in a moment, or use “Print / save as PDF” and “Download data file” and e-mail both to <b>"+esc(CONFIG.DESK_EMAIL)+"</b> quoting reference "+esc(state.ref)+".";
+    warn.scrollIntoView({block:"center",behavior:"smooth"});
+    announce("Submission failed. Your answers are still on this page — you can retry.");
+    return;
   }
   state.submitted=true;
   $("#done-ref").textContent=state.ref;
@@ -1167,6 +1292,7 @@ async function submit(){
 }
 function downloadJSON(){
   const payload=buildPayloadWithFlags();
+  delete payload.secret; // the endpoint filter token has no place in a customer download
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
@@ -1180,9 +1306,11 @@ let draftTimer=null;
 function saveDraftSoon(){ clearTimeout(draftTimer); draftTimer=setTimeout(saveDraft,600); }
 function saveDraft(){
   try{
-    const d={fields:{},holders:[],signatories:[],type:accountType(),jointCount:$("#jointCount").value,
+    const d={savedAt:new Date().toISOString(),
+      fields:{},holders:[],signatories:[],type:accountType(),jointCount:$("#jointCount").value,
       mandateRule:($('input[name="mandateRule"]:checked')||{}).value};
-    $$("#app input[id],#app select[id]").forEach(i=>{ if(i.type==="checkbox") d.fields[i.id]=i.checked; else d.fields[i.id]=i.value; });
+    // fld-* ids are generated per-session for label association — never key a draft on them
+    $$("#app input[id],#app select[id]").forEach(i=>{ if(i.id.startsWith("fld-")) return; if(i.type==="checkbox") d.fields[i.id]=i.checked; else d.fields[i.id]=i.value; });
     $$("#holders .holder").forEach(b=>{ const h={}; $$("[data-k]",b).forEach(inp=>h[inp.dataset.k]=inp.value); d.holders.push(h); });
     $$("#signatories .signatory").forEach(b=>{ const s={}; $$("[data-k]",b).forEach(inp=>s[inp.dataset.k]=inp.value); d.signatories.push(s); });
     localStorage.setItem(DRAFT_KEY,JSON.stringify(d));
@@ -1197,17 +1325,46 @@ function loadDraft(){
     if(d.type){ const r=$(`input[name="accountType"][value="${d.type}"]`); if(r){ r.checked=true; r.closest(".choice").classList.add("sel"); } }
     if(d.jointCount) $("#jointCount").value=d.jointCount;
     onTypeChange();
-    Object.entries(d.fields||{}).forEach(([id,v])=>{ const i=document.getElementById(id); if(!i) return;
+    Object.entries(d.fields||{}).forEach(([id,v])=>{ if(id.startsWith("fld-")) return;
+      const i=document.getElementById(id); if(!i) return;
       if(i.type==="checkbox") i.checked=!!v; else i.value=v; });
     if(d.fields && d.fields.category){ $("#category").value=d.fields.category; fillClassSelect(); $("#klass").value=d.fields.klass||""; }
     (d.holders||[]).forEach((h,i)=>{ const b=$$("#holders .holder")[i]; if(!b) return;
       Object.entries(h).forEach(([k,v])=>{ const inp=$(`[data-k="${k}"]`,b); if(inp) inp.value=v; }); });
+    if(d.signatories && d.signatories.length) pendingDraftSignatories=d.signatories;
     if(d.mandateRule){ const r=$(`input[name="mandateRule"][value="${d.mandateRule}"]`); if(r){ r.checked=true; } }
     $$("#mandate-rule .choice").forEach(c=>c.classList.toggle("sel",c.querySelector("input").checked));
+    // conditional fields whose visibility is driven by change listeners that
+    // programmatic restore never fires
+    $("#f-bankOther").style.display = $("#bankName").value==="other"?"flex":"none";
+    $("#f-fundsOther").style.display = $("#fundsSource").value==="Other"?"flex":"none";
+    // keep a customer-edited account name instead of re-deriving it
+    const draftedName=((d.fields||{}).accountName||"").trim();
     updateAccountName();
+    if(draftedName && draftedName!==$("#accountName").value){
+      acctNameTouched=true; $("#accountName").value=draftedName;
+      if($("#sameName").checked) $("#bankAcctName").value=draftedName;
+    }
   }catch(e){ console.warn("draft load failed",e); }
 }
 function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+/* KYC data must never silently auto-fill for the next person on a shared
+   browser — offer the draft, don't apply it */
+function offerDraft(){
+  let d=null;
+  try{ const raw=localStorage.getItem(DRAFT_KEY); if(raw) d=JSON.parse(raw); }catch(e){}
+  if(!d) return;
+  const when=d.savedAt?new Date(d.savedAt).toLocaleString():"earlier";
+  const bar=el("div","note");
+  bar.style.cssText="display:flex;gap:12px;align-items:center;flex-wrap:wrap";
+  bar.innerHTML=`<span style="flex:1"><b>Unfinished application found</b> (saved ${esc(when)} on this browser). Continue where you left off?</span>`;
+  const yes=el("button","btn small primary","Resume draft"); yes.type="button";
+  const no=el("button","btn small","Discard"); no.type="button";
+  yes.addEventListener("click",()=>{ loadDraft(); bar.remove(); });
+  no.addEventListener("click",()=>{ clearDraft(); bar.remove(); });
+  bar.append(yes,no);
+  $("main").prepend(bar);
+}
 
 /* ════════ wiring ════════ */
 function init(){
@@ -1218,12 +1375,18 @@ function init(){
   }));
   $("#mandate-rule .choice input").closest(".choice").classList.add("sel");
   $("#jointCount").addEventListener("change",()=>{ renderHolders(); signatoriesBuilt=false; saveDraftSoon(); });
-  $("#btn-next").addEventListener("click",()=>{ if(validateStep(state.step)) showStep(state.step+1); });
+  $("#btn-next").addEventListener("click",()=>{ if(validateStep(state.step)) showStep(state.step+1); else focusFirstInvalid(); });
   $("#btn-back").addEventListener("click",()=>showStep(Math.max(0,state.step-1)));
   $("#btn-submit").addEventListener("click",submit);
   $("#btn-print-blank").addEventListener("click",doPrint);
   $("#btn-print-done").addEventListener("click",doPrint);
   $("#btn-json-done").addEventListener("click",downloadJSON);
+  $("#btn-json-review").addEventListener("click",downloadJSON);
+  // printing from the browser menu must not produce blank pages
+  window.addEventListener("beforeprint",()=>{ try{ buildPrintDoc(); }catch(e){} });
+  // company-card country selects
+  ["coNationality","coResidence"].forEach(id=>{ const sel=document.getElementById(id);
+    COUNTRIES.forEach(c=>sel.append(new Option(c,c))); sel.value="Tanzania"; });
   $("#bankName").addEventListener("change",()=>{ $("#f-bankOther").style.display=$("#bankName").value==="other"?"flex":"none"; });
   $("#fundsSource").addEventListener("change",()=>{ $("#f-fundsOther").style.display=$("#fundsSource").value==="Other"?"flex":"none"; });
   $("#accountName").addEventListener("input",()=>{ acctNameTouched=true; if($("#sameName").checked) $("#bankAcctName").value=$("#accountName").value; });
@@ -1234,7 +1397,7 @@ function init(){
     const k=e.target.dataset&&e.target.dataset.k;
     if(k==="tin"||e.target.id==="coTin") e.target.value=fmtTin(e.target.value);
     if(k==="nin") e.target.value=fmtNin(e.target.value);
-    if(k==="mobile"||e.target.id==="coContactPhone") e.target.value=e.target.value.replace(/\D/g,"").slice(0,9);
+    if(k==="mobile"||e.target.id==="coContactPhone"){ const raw=e.target.value; e.target.value=(raw.startsWith("+")?"+":"")+raw.replace(/\D/g,"").slice(0,15); }
     if(["surname","firstName","middleName"].includes(k)||e.target.id==="coName") updateAccountName();
     if(e.target.closest("#app")) saveDraftSoon();
   });
@@ -1248,9 +1411,10 @@ function init(){
       } else note.style.display="none"; }
   });
   $("#cfg-foot").textContent = CONFIG.SUBMIT_ENDPOINT ? "" : " · Offline template mode — no submission endpoint configured.";
-  loadDraft();
+  associateLabels(document);
   drawStepper(); showStep(0);
   onTypeChange();
+  offerDraft(); // never auto-fill KYC data on a possibly shared browser
 }
 init();
 </script>
