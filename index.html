@@ -248,8 +248,8 @@
    Every value must come from a Bank of Tanzania (or NBS) publication.
    ════════════════════════════════════════════════════════════════════ */
 const DATA = { /* INJECT-DATA */
-  asOf: "2026-08-27",
-  updateLine: "Auto-refreshed from BOT releases · last built 27 Aug 2026",
+  asOf: "2026-09-02",
+  updateLine: "Auto-refreshed from BOT releases · last built 2 Sep 2026",
   tape: [
     {label:"CBR", value:"6.25%", dir:"up"},
     {label:"REDISCOUNT", value:"8.75%", dir:"up"},
@@ -259,11 +259,11 @@ const DATA = { /* INJECT-DATA */
     {label:"182-DAY BILL", value:"5.055%", dir:"dn"},
     {label:"2Y BOND", value:"8.403%", dir:"up"},
     {label:"5Y BOND", value:"9.539%", dir:"dn"},
-    {label:"10Y BOND", value:"10.875%", dir:"up"},
+    {label:"10Y BOND", value:"10.692%", dir:"dn"},
     {label:"15Y BOND", value:"10.552%", dir:"up"},
     {label:"20Y BOND", value:"11.331%", dir:"up"},
     {label:"25Y BOND", value:"11.480%", dir:"dn"},
-    {label:"TZS/USD", value:"2,658.06", dir:"up"},
+    {label:"TZS/USD", value:"2,653.00", dir:"dn"},
     {label:"IBCM 7-DAY", value:"6.41%", dir:"up"}
   ],
   sources: [
@@ -312,7 +312,7 @@ const DATA = { /* INJECT-DATA */
   yieldCurve: [
     {t:2, v:8.4033, note:"Auction No. 712, 29 Jul 2026 · 9.50% coupon · bids 3.9× the offer"},
     {t:5, v:9.5385, note:"Auction No. 700, 29 Apr 2026 · 10.25% coupon · stalest point — no 5y auction since; next one 16 Sep"},
-    {t:10, v:10.8747, note:"Auction No. 711, 22 Jul 2026 · fresh 11.25% coupon issue · bids 2.5×"},
+    {t:10, v:10.6924, note:"Auction No. 711 re-opening, 2 Sep 2026 · 11.25% coupon · bids 2.5×"},
     {t:15, v:10.5515, note:"19 Aug 2026 re-opening of a high-coupon (12.25%) bond at a premium price — that is why 15y sits below 10y; an auction-timing effect, not a true inversion"},
     {t:20, v:11.3306, note:"Auction No. 710, 8 Jul 2026 · 12.25% coupon · bids 1.9×"},
     {t:25, v:11.4799, note:"Auction No. 695 3rd sale, 5 Aug 2026 · 13.25% coupon · bids 4.3× — heaviest demand on the curve"}
@@ -339,8 +339,8 @@ const DATA = { /* INJECT-DATA */
       {t:"2025-11-26",v:10.5425,note:"Auction 689 · 10.75% coupon"},
       {t:"2026-04-29",v:9.5385,note:"Auction 700 · 10.25% coupon"}
      ]},
-    {y:10, name:"10-Year", coupon:"11.25%", way:10.8747, wap:"103.4215", date:"2026-07-22", auc:"No. 711", bid:"2.5×", prev:"10.3913% · 10 Jun 2026", isin:"TZ1996106112",
-     note:"The 10-year backed up from its April low of 9.40% to 10.87% in July — the clearest sign the mid-curve repriced after the CBR hike. A re-opening of this line is scheduled for 2 Sep 2026.",
+    {y:10, name:"10-Year", coupon:"11.25%", way:10.6924, wap:"103.3267", date:"2026-09-02", auc:"No. 711 re-opening", bid:"2.5×", prev:"10.8747% · 22 Jul 2026", isin:"TZ1996106112",
+     note:"The 10-year eased to 10.69% at the 2 September re-opening of the same 11.25% line — a partial retracement from July's 10.87%, though still well above April's 9.40% cycle low. Bids covered the offer 2.5×.",
      hist:[
       {t:"2025-01-22",v:14.0846,note:"Auction 667 · 14% coupon"},
       {t:"2025-04-30",v:14.2594,note:"Auction 667 re-opening · 14% coupon"},
@@ -349,7 +349,8 @@ const DATA = { /* INJECT-DATA */
       {t:"2026-01-14",v:11.3021,note:"Auction 694 · 11.75% coupon"},
       {t:"2026-04-15",v:9.3962,note:"Auction 699 · 10.5% coupon — the cycle low"},
       {t:"2026-06-10",v:10.3913,note:"Auction 699 re-opening · 10.5% coupon"},
-      {t:"2026-07-22",v:10.8747,note:"Auction 711 · 11.25% coupon"}
+      {t:"2026-07-22",v:10.8747,note:"Auction 711 · 11.25% coupon"},
+      {t:"2026-09-02",v:10.6924,note:"Auction 711 re-opening · 11.25% coupon · bids 2.5×"}
      ]},
     {y:15, name:"15-Year", coupon:"12.25%", way:10.5515, wap:"112.4713", date:"2026-08-19", auc:"No. 696 re-opening", bid:"4.1×", prev:"10.3861% · 13 May 2026", isin:"TZ1996105924",
      note:"This 10.55% came from re-opening an older bond that pays a rich 12.25% coupon — investors paid a premium price (112.47 per 100) for it, which pulls the yield below the 10-year's. An auction-timing and coupon effect, not a signal that 15 years pays less than 10.",
@@ -429,11 +430,9 @@ const DATA = { /* INJECT-DATA */
     {t:"2025-12",v:2447.5},{t:"2026-01",v:2518.1},{t:"2026-02",v:2542.5},
     {t:"2026-03",v:2577.4},{t:"2026-04",v:2602},{t:"2026-05",v:2609.2},
     {t:"2026-06",v:2623.5},
-    {t:"2026-08-27",v:2658.06,note:"Latest BOT indicative selling rate (buying 2,631.74) — not end-of-month"}
+    {t:"2026-09-02",v:2653,note:"Latest BOT indicative selling rate (buying 2,626.73) — not end-of-month"}
   ],
   calendar: [
-    {date:"2026-08-26", what:"Treasury bills — all four tenors", m:"New issue · 35, 91, 182 & 364-day offered together"},
-    {date:"2026-09-02", what:"10-Year Treasury bond", m:"Re-opening of the 11.25% line (the calendar PDF mislabels this row as 20-Year)"},
     {date:"2026-09-09", what:"Treasury bills — all four tenors", m:"New issue"},
     {date:"2026-09-16", what:"5-Year Treasury bond", m:"Re-opening · first 5-year supply since April — a fresh read on the belly of the curve"},
     {date:"2026-09-23", what:"Treasury bills — all four tenors", m:"New issue"},
@@ -946,9 +945,9 @@ function buildMarket(){
   secHead(sec,"Market Snapshot","The wider picture",
     'The backdrop every yield trades against: the shilling, the country’s FX buffers, and how fast money and credit are growing.');
   const g=el("div","grid c3"); sec.append(g);
-  tile(g,{label:"TZS / USD", value:"2,658.06", unit:"TZS", delta:"weaker y/y", dir:"up",
-    sub:"BOT selling rate · 27 Aug 2026 (buying 2,631.74)",
-    plain:"It takes 2,658 shillings to buy a dollar — about 8% more than a year ago. On this chart, up = weaker shilling.",
+  tile(g,{label:"TZS / USD", value:"2,653.00", unit:"TZS", delta:"weaker y/y", dir:"up",
+    sub:"BOT selling rate · 2 Sep 2026 (buying 2,626.73)",
+    plain:"It takes 2,653 shillings to buy a dollar — about 8% more than a year ago. On this chart, up = weaker shilling.",
     econ:"A weaker shilling makes imports (fuel, fertiliser) pricier — one of the channels behind the inflation climb.",
     mkt:"FX weakness pressures BOT to keep policy tight, which supports higher yields."});
   tile(g,{label:"FX reserves", value:"5.67", unit:"USD bn", delta:"4.4 months cover", dir:"fl",
