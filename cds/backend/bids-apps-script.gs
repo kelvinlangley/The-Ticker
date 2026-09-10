@@ -230,8 +230,8 @@ function handleBid(p) {
   if (String(p.investorNames || '').trim().length < 2) return json({ ok: false, error: 'Investors full names missing' });
   if (NATURES.indexOf(String(p.nature)) < 0) return json({ ok: false, error: 'Nature of investor missing' });
   const acct = String(p.securitiesAccount || '').trim().toUpperCase();
-  if (!/^(BOTCDSB|BOTCDSCORU)[A-Z0-9]{2,20}$/.test(acct))
-    return json({ ok: false, error: 'Securities account must start with BOTCDSB or BOTCDSCORU' });
+  if (!/^(BOTCDSB026|BOTCDSCORU)\d{4,8}$/.test(acct))
+    return json({ ok: false, error: 'Securities account must be BOTCDSB026 or BOTCDSCORU followed by numbers only' });
   if (a.tenors.length && a.tenors.indexOf(String(p.tenor || '').trim()) < 0)
     return json({ ok: false, error: 'Pick a tenor (' + a.tenors.join(', ') + ' days)' });
   if (!/^\d+$/.test(String(p.faceValue))) return json({ ok: false, error: 'Face value must be a whole number of shillings' });

@@ -172,7 +172,7 @@
           <div class="f"><label for="securitiesAccount">3. Securities Account Number <span class="req">*</span></label>
             <input id="securitiesAccount" autocomplete="off" style="text-transform:uppercase">
             <div class="hint">i.e (BOTCDSB026xxxx or BOTCDSCORUxxxx)</div>
-            <div class="err">Must start with BOTCDSB or BOTCDSCORU</div></div>
+            <div class="err">Must be BOTCDSB026 or BOTCDSCORU followed by numbers only</div></div>
 
           <div class="f" id="f-tenor" style="display:none"><label for="tenorSel">Tenor <span class="req">*</span></label>
             <select id="tenorSel"></select></div>
@@ -398,7 +398,7 @@ function validate(){
   need($("#investorNames"), $("#investorNames").value.trim().length > 1);
   need($("#nature-radios"), !!radioVal("nature"));
   const acct = $("#securitiesAccount").value.trim().toUpperCase();
-  need($("#securitiesAccount"), /^(BOTCDSB|BOTCDSCORU)[A-Z0-9]{2,20}$/.test(acct));
+  need($("#securitiesAccount"), /^(BOTCDSB026|BOTCDSCORU)\d{4,8}$/.test(acct));
   if(a.tenors.length) need($("#tenorSel"), !!$("#tenorSel").value);
   const amt = Number($("#faceValue").value.replace(/\D/g, ""));
   let faceOK = /^\d+$/.test($("#faceValue").value.replace(/\D/g, "")) && amt >= a.minBid;
