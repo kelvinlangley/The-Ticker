@@ -142,27 +142,35 @@ A companion **staff-only portal** for entering client bids in BOT auctions
 (modeled on **CDS/FORM/03**: up to 4 bid lines, face value + price per 100 at
 4 decimals). One Google Sheet drives it, via `backend/bids-apps-script.gs`:
 
-- **Staff tab** — StaffID / Name / Branch / PIN / Active. Login is verified
-  *server-side* and issues a same-day token; bids without a valid token are
-  rejected by the server, so only listed staff can submit.
+- **Staff tab** — Email / Name / Branch / StaffNumber / Active. Staff sign in
+  with their `@crdbbank.co.tz` e-mail plus their staff number (digits, ≤5).
+  Login is verified *server-side* and issues a same-day token; bids without a
+  valid token are rejected by the server, so only listed staff can submit.
 - **Auctions tab** — one row per auction (number, security, coupon, ISIN,
-  dates, min bid, multiple, price band, bid cutoff). The `Active` column is
-  the admin switch: `YES` = open (auto-closes at `BidCutoff`), `CLOSED` =
-  shown but bidding stopped, `NO` = hidden. Extend/grace = edit `BidCutoff`;
-  next auction = add a row. The server re-checks the live sheet on every
-  submission and portals refresh their auction every 2 minutes.
-- **Bids tab** — one row per bid line with a server timestamp, bid reference,
-  staff identity, client, amounts and prices. File → Download → Excel.
+  dates, min bid, multiple, price band). The `Active` column is the admin
+  switch: `YES` = open, `CLOSED` = staff see a thank-you note that the
+  auction is closed (consider the next one), `NO` = hidden. Leave
+  `SettlementDate` blank → **auto: the day after the auction**. Leave
+  `BidCutoff` blank → **auto deadline: 5:00 PM EAT the day before the
+  auction**; type an explicit date-time to override it (grace period /
+  extension). Next auction = add a row. The server re-checks the live sheet
+  on every submission and portals refresh their auction every 2 minutes.
+- **Bids tab** — one row per bid with a server timestamp, bid reference,
+  staff identity, client, amounts, prices and the client's e-mail (for
+  sharing results with successful bidders). File → Download → Excel.
 
-Validation is enforced twice (browser and server): amount ≥ minimum and in
-the configured multiples, price inside the band with ≤4 decimals, CDS/funding
-account formats, competitive vs non-competitive rules, cutoff respected.
+Validation is enforced twice (browser and server), with instant inline
+feedback as staff move between fields: securities account strictly
+`BOTCDSB026`/`BOTCDSCORU` + digits, amount ≥ minimum and in the configured
+multiples, price inside the band with ≤4 decimals, account to debit 10–13
+digits, client e-mail required, deadline respected.
 
 Setup mirrors the account form: blank Sheet → paste the script → set
 `SHEET_ID` and a random `TOKEN_SECRET` → Run `setup()` once → deploy as Web
 App (Execute as Me / access: Anyone) → put the `/exec` URL in
 `bids/index.html` `CONFIG.API_URL`. With no URL configured the portal runs in
-demo mode (staff `1001` / PIN `1234`, nothing is sent).
+demo mode (any `@crdbbank.co.tz` e-mail + any ≤5-digit staff number signs
+in, nothing is sent; append `?closed=1` to preview the closed-auction note).
 
 ## Files
 
