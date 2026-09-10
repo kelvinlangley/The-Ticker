@@ -67,6 +67,18 @@ const AUCTION_COLS = ['Active', 'AuctionNo', 'Security', 'Coupon', 'ISIN',
   'AuctionDate', 'SettlementDate', 'MaturityPeriod', 'Tenors', 'MinBidTZS',
   'MultipleTZS', 'PriceMin', 'PriceMax', 'MaxWapTZS', 'BidCutoff', 'Notes'];
 const ADMIN_COLS = ['Email', 'Name', 'Branch', 'Password', 'AdminPin', 'Active'];
+const LOG_COLS = ['Time', 'Email', 'Event'];
+
+// The MASTER admin: the only account that sees the Login Activity log and
+// can DELETE auctions in the admin portal.
+const MASTER_ADMIN = 'kelvin.njelekela@crdbbank.co.tz';
+
+// Desk defaults: BOT auctions always use these, so the editor pre-fills
+// them and the clean-price sanity band is applied automatically.
+const DEFAULT_MIN_BID = 1000000;
+const DEFAULT_MULTIPLE = 100000;
+const DEFAULT_PRICE_MIN = 50;   // sanity band for clean price per 100
+const DEFAULT_PRICE_MAX = 200;
 
 // Seed list for the Admins tab: these e-mails are written into the tab the
 // first time it is created. AFTER that, the TAB is the authority - add or
@@ -126,7 +138,7 @@ function ensureTabs() {
     });
     return sh;
   };
-  tab('Auctions', AUCTION_COLS); tab('Bids', BID_COLS);
+  tab('Auctions', AUCTION_COLS); tab('Bids', BID_COLS); tab('AdminLog', LOG_COLS);
   // the Admins tab is the admin access list; seed it from ADMIN_EMAILS ONCE
   // EVER (a script property remembers) - so deliberately emptying the tab
   // later cannot silently resurrect the hardcoded list. Values are written
@@ -279,6 +291,16 @@ function json(o) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Admin login trail (shown to the MASTER admin only). Logging must never
+// break a sign-in, hence the try/catch.
+function logAdmin(email, event) {
+  try {
+    let sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('AdminLog');
+    if (!sh) { ensureTabs(); sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('AdminLog'); }
+    sh.appendRow([new Date(), safe(email), event]);
+  } catch (e) {}
+}
+
 function doGet(e) {
   if ((e && e.parameter && e.parameter.action) === 'config') {
     if (!configured()) return json({ ok: false, error: 'Backend not configured (SHEET_ID / TOKEN_SECRET)' });
@@ -299,6 +321,7 @@ function doPost(e) {
     if (p.action === 'adminData') return handleAdminData(p);
     if (p.action === 'adminSaveAuction') return handleAdminSaveAuction(p);
     if (p.action === 'adminSetActive') return handleAdminSetActive(p);
+    if (p.action === 'adminDeleteAuction') return handleAdminDeleteAuction(p);
     return json({ ok: false, error: 'Unknown action' });
   } catch (err) {
     console.error(err);
@@ -325,9 +348,11 @@ function handleLogin(p) {
     const pin = String(row.AdminPin == null ? '' : row.AdminPin).trim();
     if (String(p.password || '').trim() !== stored || String(p.adminPin || '').trim() !== pin) {
       const locked = loginThrottle(email, true);
+      logAdmin(email, locked ? 'Locked out (5 failures)' : 'Failed sign-in attempt');
       return json({ ok: false, error: locked ? LOCK_MSG : 'Wrong password or Admin PIN' });
     }
     loginThrottle(email, false);
+    logAdmin(email, 'Signed in');
     return json({ ok: true, token: makeToken(email, 'admin'),
       name: String(row.Name || '').trim() || nameFromEmail(email), admin: true });
   }
@@ -372,6 +397,7 @@ function handleAdminSetPassword(p) {
     sh.getRange(r + 1, iP + 1).setValue(pw);
     sh.getRange(r + 1, iPin + 1).setValue(pin);
     loginThrottle(email, false);
+    logAdmin(email, 'Created password + received PIN');
     return json({ ok: true, pin: pin, token: makeToken(email, 'admin'),
       name: String(iN >= 0 ? values[r][iN] : '').trim() || nameFromEmail(email), admin: true });
   } finally { lock.releaseLock(); }
@@ -511,7 +537,8 @@ function rowStillHolds(sh, row, expectNo) {
 }
 
 function handleAdminData(p) {
-  if (!adminAuth(p.token)) return json({ ok: false, error: 'Admin session expired - please log in again' });
+  const auth = adminAuth(p.token);
+  if (!auth) return json({ ok: false, error: 'Admin session expired - please log in again' });
   let bids = sheetRows('Bids', BID_COLS).map(r => {
     const o = {};
     BID_COLS.forEach(c => { o[c] = (r[c] instanceof Date)
@@ -519,7 +546,35 @@ function handleAdminData(p) {
     return o;
   });
   if (p.auctionNo) bids = bids.filter(b => String(b.AuctionNo) === String(p.auctionNo));
-  return json({ ok: true, auctions: auctionTable(), bids: bids, live: activeAuction() });
+  const out = { ok: true, auctions: auctionTable(), bids: bids, live: activeAuction(),
+    master: auth.email === MASTER_ADMIN };
+  // the sign-in trail is for the MASTER admin's eyes only (last 200 events)
+  if (out.master) {
+    out.logins = sheetRows('AdminLog', LOG_COLS).slice(-200).map(r => ({
+      time: (r.Time instanceof Date) ? Utilities.formatDate(r.Time, TZ, 'yyyy-MM-dd HH:mm:ss') : String(r.Time || ''),
+      email: String(r.Email || ''), event: String(r.Event || ''),
+    }));
+  }
+  return json(out);
+}
+
+// MASTER admin only: removes an auction row entirely. Bids already recorded
+// for it stay in the Bids register (history is never deleted).
+function handleAdminDeleteAuction(p) {
+  const auth = adminAuth(p.token);
+  if (!auth) return json({ ok: false, error: 'Admin session expired - please log in again' });
+  if (auth.email !== MASTER_ADMIN) return json({ ok: false, error: 'Only the master admin can delete auctions' });
+  const row = Number(p.row) || 0;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Auctions');
+    if (row < 2 || row > sh.getLastRow() || !rowStillHolds(sh, row, p.expectAuctionNo))
+      return json({ ok: false, error: 'The auction list changed since your page loaded - refresh and try again' });
+    sh.deleteRow(row);
+    logAdmin(auth.email, 'Deleted auction ' + String(p.expectAuctionNo || ''));
+    return json({ ok: true, live: activeAuction() });
+  } finally { lock.releaseLock(); }
 }
 
 // Validates one auction row from the editor; {err} or {vals} in AUCTION_COLS order.
@@ -536,8 +591,12 @@ function checkAuctionInput(a) {
   if (cut && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(cut))
     return { err: 'Deadline must be yyyy-MM-dd HH:mm, or blank = 5:00 PM the day before the auction' };
   const num = k => Number(String(a[k] == null ? '' : a[k]).replace(/[, ]/g, ''));
-  const minBid = num('MinBidTZS'), mult = num('MultipleTZS');
-  const pMin = num('PriceMin'), pMax = num('PriceMax');
+  // desk defaults apply when left blank: min bid 1,000,000 - multiples
+  // 100,000 - clean-price sanity band 50-200 per 100
+  const minBid = t('MinBidTZS') === '' ? DEFAULT_MIN_BID : num('MinBidTZS');
+  const mult = t('MultipleTZS') === '' ? DEFAULT_MULTIPLE : num('MultipleTZS');
+  const pMin = t('PriceMin') === '' ? DEFAULT_PRICE_MIN : num('PriceMin');
+  const pMax = t('PriceMax') === '' ? DEFAULT_PRICE_MAX : num('PriceMax');
   const maxWap = t('MaxWapTZS') === '' ? 0 : num('MaxWapTZS');
   if (!(minBid > 0)) return { err: 'Minimum bid must be a positive number' };
   if (!(mult > 0)) return { err: 'Multiples must be a positive number' };

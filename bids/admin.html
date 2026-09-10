@@ -205,6 +205,7 @@
       <div class="tabs">
         <button type="button" id="tab-reports" class="sel">Bid Reports</button>
         <button type="button" id="tab-auctions">Auction Setup</button>
+        <button type="button" id="tab-activity" style="display:none">Login Activity</button>
       </div>
 
       <!-- Reports -->
@@ -257,13 +258,13 @@
             <div class="f"><label for="edTenors">Tenors (T-bill only)</label>
               <input id="edTenors" autocomplete="off" inputmode="numeric"><div class="hint">Blank for a bond; for a T-bill list days e.g. 91,182,364</div><div class="err">Comma list of days, e.g. 91,182,364</div></div>
             <div class="f"><label for="edMin">Minimum bid (TZS) <span class="req">*</span></label>
-              <input id="edMin" inputmode="numeric" autocomplete="off"><div class="err">Positive number</div></div>
+              <input id="edMin" inputmode="numeric" autocomplete="off">
+              <div class="hint">Pre-filled with the standard 1,000,000 — change only if BOT says otherwise</div>
+              <div class="err">Positive number</div></div>
             <div class="f"><label for="edMult">Multiples of (TZS) <span class="req">*</span></label>
-              <input id="edMult" inputmode="numeric" autocomplete="off"><div class="err">Positive number</div></div>
-            <div class="f"><label for="edPmin">Price band minimum (per 100) <span class="req">*</span></label>
-              <input id="edPmin" inputmode="decimal" autocomplete="off"><div class="err">Positive number, below the maximum</div></div>
-            <div class="f"><label for="edPmax">Price band maximum (per 100) <span class="req">*</span></label>
-              <input id="edPmax" inputmode="decimal" autocomplete="off"><div class="err">Must be above the minimum</div></div>
+              <input id="edMult" inputmode="numeric" autocomplete="off">
+              <div class="hint">Pre-filled with the standard 100,000</div>
+              <div class="err">Positive number</div></div>
             <div class="f"><label for="edWap">WAP cap per client (TZS)</label>
               <input id="edWap" inputmode="numeric" autocomplete="off"><div class="hint">0 or blank = no cap</div><div class="err">Number, 0 or more</div></div>
             <div class="f"><label for="edCutoff">Submission deadline</label>
@@ -278,6 +279,16 @@
           </div>
         </div>
         <div class="note" id="auc-ok" style="display:none"></div>
+      </div>
+
+      <!-- Login activity (master admin only) -->
+      <div id="pane-activity" style="display:none">
+        <div class="card">
+          <h3>Admin Login Activity</h3>
+          <div class="hint" style="margin-bottom:12px">Every admin sign-in, failed attempt, lockout and password creation — newest first, last 200 events. Only you (the master admin) can see this.</div>
+          <div class="tablewrap"><table class="report" id="act-table"></table></div>
+          <div id="act-empty" class="note" style="display:none">No sign-in activity recorded yet.</div>
+        </div>
       </div>
     </section>
   </div>
@@ -327,11 +338,13 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt
 const fmtTZS = n => Number(n).toLocaleString("en-US");
 const staffEmailOk = v => new RegExp("^[a-z0-9._%+-]+@" + STAFF_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(v);
 
-const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0, editingNo: "", editingSnap: "" };
+const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0, editingNo: "", editingSnap: "",
+  master: false, logins: [] };
 
 /* ════════ demo backend ════════ */
 const demo = {
   creds: {}, // demo password/PIN store: email -> { pw, pin }
+  lastEmail: "", log: [],
   auctions: [
     { row: 2, Active: "NO", AuctionNo: "709", Security: "12.10% 15yrs T-Bond", Coupon: "12.10%",
       ISIN: "TZ1996106087", AuctionDate: "2099-08-05", SettlementDate: "2099-08-06", MaturityPeriod: "15 years",
@@ -373,9 +386,13 @@ function demoApi(body){
     if(!staffEmailOk(em)) return { ok:false, error:"Use your @" + STAFF_DOMAIN + " e-mail" };
     if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
     const c = demo.creds[em];
+    const demoLog = ev => demo.log.push({ time: new Date().toLocaleString("sv-SE", { timeZone: "Africa/Dar_es_Salaam" }), email: em, event: ev });
     if(!c) return { ok:false, setupRequired: true, error: "First sign-in - create your password below" };
-    if(String(body.password || "") !== c.pw || String(body.adminPin || "").trim() !== c.pin)
+    if(String(body.password || "") !== c.pw || String(body.adminPin || "").trim() !== c.pin){
+      demoLog("Failed sign-in attempt");
       return { ok:false, error: "Wrong password or Admin PIN" };
+    }
+    demo.lastEmail = em; demoLog("Signed in");
     return { ok:true, token:"demo", name: demoName(em), admin: true };
   }
   if(body.action === "adminSetPassword"){
@@ -386,9 +403,22 @@ function demoApi(body){
     if(pw.length < 8 || pw.length > 64) return { ok:false, error: "Password must be 8 to 64 characters" };
     const pin = String(Math.floor(1000 + Math.random() * 9000));
     demo.creds[em] = { pw: pw, pin: pin };
+    demo.lastEmail = em;
+    demo.log.push({ time: new Date().toLocaleString("sv-SE", { timeZone: "Africa/Dar_es_Salaam" }), email: em, event: "Created password + received PIN" });
     return { ok:true, pin: pin, token: "demo", name: demoName(em), admin: true };
   }
-  if(body.action === "adminData") return { ok:true, auctions: demo.auctions.map(a => ({...a})), bids: demo.bids.map(b => ({...b})) };
+  if(body.action === "adminData"){
+    const master = demo.lastEmail === ADMIN_EMAILS[0];
+    return { ok:true, auctions: demo.auctions.map(a => ({...a})), bids: demo.bids.map(b => ({...b})),
+      master: master, logins: master ? demo.log.slice(-200) : undefined };
+  }
+  if(body.action === "adminDeleteAuction"){
+    if(demo.lastEmail !== ADMIN_EMAILS[0]) return { ok:false, error: "Only the master admin can delete auctions" };
+    const i = demo.auctions.findIndex(x => x.row === Number(body.row));
+    if(i < 0) return { ok:false, error: "Row not found" };
+    demo.auctions.splice(i, 1);
+    return { ok:true };
+  }
   if(body.action === "adminSaveAuction"){
     const a = body.auction;
     if(!a.AuctionNo || !a.Security) return { ok:false, error:"Auction number and security are required" };
@@ -443,7 +473,9 @@ async function loadData(silent){
     }
     state.auctions = j.auctions || [];
     state.bids = j.bids || [];
-    renderAuctionSelect(); renderReport(); renderAucList();
+    state.master = !!j.master; state.logins = j.logins || [];
+    $("#tab-activity").style.display = state.master ? "" : "none";
+    renderAuctionSelect(); renderReport(); renderAucList(); renderActivity();
     // warn if the auction open in the editor was changed elsewhere meanwhile
     if(state.editingRow && $("#editor").style.display !== "none"){
       const cur = state.auctions.find(x => x.row === state.editingRow);
@@ -471,10 +503,24 @@ function aucLabel(a){
 function renderAuctionSelect(){
   const sel = $("#repAuction"); const cur = sel.value;
   const opts = [...state.auctions].reverse();
+  // auctions deleted by the master admin keep their bids: list them as archived
+  const known = new Set(opts.map(a => String(a.AuctionNo)));
+  const archived = [...new Set(state.bids.map(b => String(b.AuctionNo)))].filter(n => n && !known.has(n));
   sel.innerHTML = opts.map(a => '<option value="' + esc(a.AuctionNo) + '">' + esc(aucLabel(a)) + "</option>").join("") +
+    archived.map(n => '<option value="' + esc(n) + '">AUCTION ' + esc(n) + " — deleted · archived bids</option>").join("") +
     '<option value="__ALL__">— ALL AUCTIONS (whole register) —</option>';
-  if(cur === "__ALL__" || opts.some(a => String(a.AuctionNo) === cur)) sel.value = cur;
+  if(cur === "__ALL__" || known.has(cur) || archived.indexOf(cur) >= 0) sel.value = cur;
   else { const open = opts.find(a => String(a.Active).toUpperCase() === "YES"); if(open) sel.value = String(open.AuctionNo); }
+}
+function renderActivity(){
+  if(!state.master) return;
+  const rows = [...state.logins].reverse();
+  const tbl = $("#act-table");
+  if(!rows.length){ tbl.innerHTML = ""; $("#act-empty").style.display = "block"; return; }
+  $("#act-empty").style.display = "none";
+  tbl.innerHTML = "<thead><tr><th>Time (EAT)</th><th>Admin</th><th>Event</th></tr></thead><tbody>" +
+    rows.map(l => "<tr><td>" + esc(l.time) + '</td><td class="t">' + esc(l.email) +
+      '</td><td class="t">' + esc(l.event) + "</td></tr>").join("") + "</tbody>";
 }
 function currentBids(){
   const no = $("#repAuction").value;
@@ -644,6 +690,7 @@ function renderAucList(){
         ? '<button type="button" class="btn small" data-act="CLOSED">Close now</button>'
         : '<button type="button" class="btn small" data-act="YES">Open</button>') +
       (s === "NO" ? "" : '<button type="button" class="btn small" data-act="NO">Hide</button>') +
+      (state.master ? '<button type="button" class="btn small" data-act="delete" style="color:var(--bad)">🗑 Delete</button>' : "") +
       "</div></div>";
   }).join("");
 }
@@ -653,6 +700,17 @@ $("#auc-list").addEventListener("click", async e => {
   const act = btn.dataset.act;
   const a = state.auctions.find(x => x.row === row); if(!a) return;
   if(act === "edit"){ openEditor(a); return; }
+  if(act === "delete"){
+    if(!confirm("DELETE auction " + a.AuctionNo + " completely?\n\nBids already recorded for it stay safely in the register (find them under ALL AUCTIONS in reports). This cannot be undone.")) return;
+    btn.disabled = true;
+    const j = await api({ action: "adminDeleteAuction", token: state.token, row: row,
+      expectAuctionNo: a.AuctionNo }).catch(err => ({ ok:false, error: err.message }));
+    btn.disabled = false;
+    if(!j.ok){ if(/log in again|expired/i.test(j.error || "")) return sessionExpired(j.error);
+      alert("Not deleted: " + (j.error || "error")); return; }
+    showOk("Auction " + a.AuctionNo + " deleted. Its recorded bids remain in the register.");
+    await loadData(true); return;
+  }
   const label = act === "YES" ? "OPEN auction " + a.AuctionNo + " for bidding?"
     : act === "CLOSED" ? "CLOSE auction " + a.AuctionNo + "? Staff will see the thank-you note."
     : "HIDE auction " + a.AuctionNo + " from staff?";
@@ -674,8 +732,9 @@ function showOk(msg){
 
 const ED = { Active: null, AuctionNo: "#edNo", Security: "#edSec", Coupon: "#edCoupon", ISIN: "#edIsin",
   AuctionDate: "#edDate", SettlementDate: "#edSettle", MaturityPeriod: "#edMat", Tenors: "#edTenors",
-  MinBidTZS: "#edMin", MultipleTZS: "#edMult", PriceMin: "#edPmin", PriceMax: "#edPmax",
+  MinBidTZS: "#edMin", MultipleTZS: "#edMult",
   MaxWapTZS: "#edWap", BidCutoff: "#edCutoff", Notes: "#edNotes" };
+const ED_DEFAULTS = { MinBidTZS: "1,000,000", MultipleTZS: "100,000" };
 function openEditor(a){
   state.editingRow = a ? a.row : 0;
   state.editingNo = a ? String(a.AuctionNo) : "";
@@ -683,7 +742,7 @@ function openEditor(a){
   $("#ed-conflict").style.display = "none";
   $("#ed-title").textContent = a ? "Edit Auction " + a.AuctionNo : "New Auction";
   Object.keys(ED).forEach(k => { if(!ED[k]) return;
-    let v = a ? (a[k] ?? "") : "";
+    let v = a ? (a[k] ?? "") : (ED_DEFAULTS[k] || "");
     if(k === "BidCutoff" && v) v = String(v).replace(" ", "T").slice(0, 16);
     $(ED[k]).value = v; setInvalid($(ED[k]), false); });
   const act = a ? String(a.Active).toUpperCase() : "YES";
@@ -712,7 +771,7 @@ function readEditor(){
     SettlementDate: val("SettlementDate"), MaturityPeriod: val("MaturityPeriod"),
     Tenors: val("Tenors").replace(/\s+/g, ""),
     MinBidTZS: numStr("MinBidTZS"), MultipleTZS: numStr("MultipleTZS"),
-    PriceMin: numStr("PriceMin"), PriceMax: numStr("PriceMax"), MaxWapTZS: numStr("MaxWapTZS"),
+    PriceMin: "", PriceMax: "", MaxWapTZS: numStr("MaxWapTZS"),
     BidCutoff: val("BidCutoff").replace("T", " "), Notes: val("Notes"),
   };
 }
@@ -730,9 +789,6 @@ function validateEditor(a){
   need("#edTenors", !a.Tenors || /^\d+(,\d+)*$/.test(a.Tenors));
   need("#edMin", Number(a.MinBidTZS) > 0);
   need("#edMult", Number(a.MultipleTZS) > 0);
-  const pMin = Number(a.PriceMin), pMax = Number(a.PriceMax);
-  need("#edPmin", pMin > 0 && (!(pMax > 0) || pMin < pMax));
-  need("#edPmax", pMax > pMin && pMax > 0);
   need("#edWap", a.MaxWapTZS === "" || Number(a.MaxWapTZS) >= 0);
   return ok;
 }
@@ -764,11 +820,14 @@ $("#btn-save").addEventListener("click", async () => {
 function selectTab(which){
   $("#tab-reports").classList.toggle("sel", which === "reports");
   $("#tab-auctions").classList.toggle("sel", which === "auctions");
+  $("#tab-activity").classList.toggle("sel", which === "activity");
   $("#pane-reports").style.display = which === "reports" ? "" : "none";
   $("#pane-auctions").style.display = which === "auctions" ? "" : "none";
+  $("#pane-activity").style.display = which === "activity" ? "" : "none";
 }
 $("#tab-reports").addEventListener("click", () => selectTab("reports"));
 $("#tab-auctions").addEventListener("click", () => selectTab("auctions"));
+$("#tab-activity").addEventListener("click", () => selectTab("activity"));
 $("#repAuction").addEventListener("change", renderReport);
 $("#btn-refresh").addEventListener("click", async () => {
   const b = $("#btn-refresh"); b.disabled = true; await loadData(); b.disabled = false;
