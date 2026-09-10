@@ -58,6 +58,7 @@
   .f .hint{font-size:11.5px; color:var(--muted)}
   .f input,.f select,.f textarea{font:inherit; font-size:14.5px; color:var(--ink); background:#fff; border:1px solid var(--border2); border-radius:9px; padding:10px 12px; width:100%; box-sizing:border-box}
   .f input:focus,.f select:focus,.f textarea:focus{outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(0,113,61,.16)}
+  .f input[readonly]{background:var(--card2); color:var(--ink2); border-style:dashed; cursor:not-allowed}
   .f.invalid input,.f.invalid select{border-color:var(--bad); background:var(--bad-soft)}
   .f .err{display:none; font-size:12px; color:var(--bad); font-weight:500}
   .f.invalid .err{display:block}
@@ -247,24 +248,22 @@
             <div class="f"><label for="edNo">Auction number <span class="req">*</span></label>
               <input id="edNo" autocomplete="off"><div class="hint">e.g. 712 or 711 (Re-open)</div><div class="err" id="edno-err">Required</div></div>
             <div class="f"><label for="edSec">Security <span class="req">*</span></label>
-              <input id="edSec" autocomplete="off"><div class="hint">e.g. 11.25% 10yrs T-Bond</div><div class="err">Required</div></div>
-            <div class="f"><label for="edCoupon">Coupon</label><input id="edCoupon" autocomplete="off"><div class="hint">e.g. 11.25% (blank for T-bill)</div></div>
+              <input id="edSec" autocomplete="off"><div class="hint">Builds itself from coupon + period, e.g. 11.25% 10yrs T-Bond — type over it for T-Bills or special names</div><div class="err">Required</div></div>
+            <div class="f"><label for="edCoupon">Coupon</label><input id="edCoupon" autocomplete="off" inputmode="decimal"><div class="hint">Type just the number, e.g. 11.25 — the % adds itself (blank for T-Bills)</div></div>
             <div class="f"><label for="edIsin">ISIN</label><input id="edIsin" autocomplete="off"></div>
             <div class="f"><label for="edDate">Auction date <span class="req">*</span></label>
               <input id="edDate" type="date"><div class="err">Required</div></div>
             <div class="f"><label for="edSettle">Settlement date</label>
               <input id="edSettle" type="date"><div class="hint">Leave blank = automatically the day after the auction</div></div>
-            <div class="f"><label for="edMat">Maturity period</label><input id="edMat" autocomplete="off"><div class="hint">e.g. 10 years</div></div>
+            <div class="f"><label for="edMat">Maturity period</label><input id="edMat" autocomplete="off" inputmode="numeric"><div class="hint">Type just the number of years, e.g. 10 — “years” adds itself (blank for T-Bills)</div></div>
             <div class="f"><label for="edTenors">Tenors (T-bill only)</label>
               <input id="edTenors" autocomplete="off" inputmode="numeric"><div class="hint">Blank for a bond; for a T-bill list days e.g. 91,182,364</div><div class="err">Comma list of days, e.g. 91,182,364</div></div>
-            <div class="f"><label for="edMin">Minimum bid (TZS) <span class="req">*</span></label>
-              <input id="edMin" inputmode="numeric" autocomplete="off">
-              <div class="hint">Pre-filled with the standard 1,000,000 — change only if BOT says otherwise</div>
-              <div class="err">Positive number</div></div>
-            <div class="f"><label for="edMult">Multiples of (TZS) <span class="req">*</span></label>
-              <input id="edMult" inputmode="numeric" autocomplete="off">
-              <div class="hint">Pre-filled with the standard 100,000</div>
-              <div class="err">Positive number</div></div>
+            <div class="f"><label for="edMin">Minimum bid (TZS)</label>
+              <input id="edMin" autocomplete="off" readonly tabindex="-1">
+              <div class="hint">Market standard — fixed</div></div>
+            <div class="f"><label for="edMult">Multiples of (TZS)</label>
+              <input id="edMult" autocomplete="off" readonly tabindex="-1">
+              <div class="hint">Market standard — fixed</div></div>
             <div class="f"><label for="edWap">WAP cap per client (TZS)</label>
               <input id="edWap" inputmode="numeric" autocomplete="off"><div class="hint">0 or blank = no cap</div><div class="err">Number, 0 or more</div></div>
             <div class="f"><label for="edCutoff">Submission deadline</label>
@@ -339,7 +338,7 @@ const fmtTZS = n => Number(n).toLocaleString("en-US");
 const staffEmailOk = v => new RegExp("^[a-z0-9._%+-]+@" + STAFF_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(v);
 
 const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0, editingNo: "", editingSnap: "",
-  master: false, logins: [] };
+  master: false, logins: [], secManual: false };
 
 /* ════════ demo backend ════════ */
 const demo = {
@@ -735,6 +734,19 @@ const ED = { Active: null, AuctionNo: "#edNo", Security: "#edSec", Coupon: "#edC
   MinBidTZS: "#edMin", MultipleTZS: "#edMult",
   MaxWapTZS: "#edWap", BidCutoff: "#edCutoff", Notes: "#edNotes" };
 const ED_DEFAULTS = { MinBidTZS: "1,000,000", MultipleTZS: "100,000" };
+// The security name assembles itself from coupon + maturity ("11.25% 10yrs
+// T-Bond") until the admin types their own text into the Security box.
+function composedSecurity(){
+  const c = $("#edCoupon").value.trim().replace(/%\s*$/, "");
+  const m = $("#edMat").value.trim().replace(/\s*years?\s*$/i, "");
+  if(!/^\d+(\.\d+)?$/.test(c) || !/^\d+$/.test(m)) return "";
+  return c + "% " + m + "yrs T-Bond";
+}
+function syncSecurity(){
+  if(state.secManual) return;
+  const s = composedSecurity();
+  if(s){ $("#edSec").value = s; setInvalid($("#edSec"), false); }
+}
 function openEditor(a){
   state.editingRow = a ? a.row : 0;
   state.editingNo = a ? String(a.AuctionNo) : "";
@@ -743,8 +755,14 @@ function openEditor(a){
   $("#ed-title").textContent = a ? "Edit Auction " + a.AuctionNo : "New Auction";
   Object.keys(ED).forEach(k => { if(!ED[k]) return;
     let v = a ? (a[k] ?? "") : (ED_DEFAULTS[k] || "");
+    // min bid and multiples are market-permanent: always the standard numbers
+    if(k === "MinBidTZS" || k === "MultipleTZS") v = ED_DEFAULTS[k];
     if(k === "BidCutoff" && v) v = String(v).replace(" ", "T").slice(0, 16);
     $(ED[k]).value = v; setInvalid($(ED[k]), false); });
+  // keep auto-building the security name unless this auction already carries
+  // a custom one that the composer would not produce
+  state.secManual = !!(a && String(a.Security || "").trim() &&
+    String(a.Security).trim() !== composedSecurity());
   const act = a ? String(a.Active).toUpperCase() : "YES";
   $$("#active-radios input").forEach(r => { r.checked = r.value === act;
     r.closest("label").classList.toggle("sel", r.checked); });
@@ -760,6 +778,27 @@ $$("#active-radios input").forEach(inp => inp.addEventListener("change", () => {
   $$("#active-radios label").forEach(l => l.classList.toggle("sel", l.querySelector("input").checked));
   setInvalid($("#active-radios"), false);
 }));
+// coupon: type 11.25 -> shows 11.25% · maturity: type 10 -> shows 10 years ·
+// both feed the auto-built security name
+$("#edCoupon").addEventListener("input", e => {
+  e.target.value = e.target.value.replace(/[^\d.%]/g, "");
+  syncSecurity();
+});
+$("#edCoupon").addEventListener("blur", () => {
+  const v = $("#edCoupon").value.trim().replace(/%\s*$/, "");
+  if(/^\d+(\.\d+)?$/.test(v)) $("#edCoupon").value = v + "%";
+  syncSecurity();
+});
+$("#edMat").addEventListener("input", syncSecurity);
+$("#edMat").addEventListener("blur", () => {
+  const v = $("#edMat").value.trim().replace(/\s*years?\s*$/i, "");
+  if(/^\d+$/.test(v)) $("#edMat").value = v + (v === "1" ? " year" : " years");
+  syncSecurity();
+});
+$("#edSec").addEventListener("input", () => {
+  const v = $("#edSec").value.trim();
+  state.secManual = v !== "" && v !== composedSecurity();
+});
 
 function readEditor(){
   const val = k => $(ED[k]).value.trim();
