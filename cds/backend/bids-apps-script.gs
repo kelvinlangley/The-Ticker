@@ -23,10 +23,12 @@
 //              offered tenors e.g. "35,91,182,364". MaxWapTZS caps one
 //              client's total WAP (price-taking) amount in this auction
 //              (0/blank = no cap).
-//   Staff    - Email / Name / Branch / StaffNumber / Active. Staff log in
-//              with their CRDB e-mail (must end @crdbbank.co.tz) and their
-//              staff number (digits, max 5) as the PIN. Only Active=YES rows
-//              can log in.
+//   Staff    - Email / Name / Branch / StaffNumber / Active / Admin. Staff
+//              log in with their CRDB e-mail (must end @crdbbank.co.tz) and
+//              their staff number (digits, max 5) as the PIN. Only Active=YES
+//              rows can log in. Admin=YES additionally unlocks the admin
+//              portal (bids/admin.html): bid reports with Excel/PDF download
+//              and an auction editor that writes to the Auctions tab.
 //   Bids     - one row per submitted bid, in the report column order
 //              (File > Download > Excel).
 //
@@ -48,7 +50,7 @@ const MAX_FACE_TZS = 500e9; // sanity ceiling per bid
 const AUCTION_COLS = ['Active', 'AuctionNo', 'Security', 'Coupon', 'ISIN',
   'AuctionDate', 'SettlementDate', 'MaturityPeriod', 'Tenors', 'MinBidTZS',
   'MultipleTZS', 'PriceMin', 'PriceMax', 'MaxWapTZS', 'BidCutoff', 'Notes'];
-const STAFF_COLS = ['Email', 'Name', 'Branch', 'StaffNumber', 'Active'];
+const STAFF_COLS = ['Email', 'Name', 'Branch', 'StaffNumber', 'Active', 'Admin'];
 const BID_COLS = ['Received', 'BidRef', 'AuctionNo', 'Security', 'StaffEmail',
   'StaffNumber', 'InvestorFullNames', 'NatureOfInvestor', 'SecuritiesAccountNumber',
   'FaceValueTZS', 'PriceType', 'CleanPricePer100', 'ConsiderationTZS',
@@ -87,7 +89,9 @@ function setup() {
   }
   const staff = ss.getSheetByName('Staff');
   if (staff.getLastRow() === 1) {
-    staff.appendRow(['sample.staff@' + STAFF_DOMAIN, 'Sample Staff', 'Head Office', '10001', 'YES']);
+    // Admin=YES so the admin portal can be tried immediately - replace this
+    // sample row with the real staff list before going live
+    staff.appendRow(['sample.staff@' + STAFF_DOMAIN, 'Sample Staff', 'Head Office', '10001', 'YES', 'YES']);
   }
 }
 
@@ -219,6 +223,9 @@ function doPost(e) {
     const p = JSON.parse(e.postData.contents);
     if (p.action === 'login') return handleLogin(p);
     if (p.action === 'bid') return handleBid(p);
+    if (p.action === 'adminData') return handleAdminData(p);
+    if (p.action === 'adminSaveAuction') return handleAdminSaveAuction(p);
+    if (p.action === 'adminSetActive') return handleAdminSetActive(p);
     return json({ ok: false, error: 'Unknown action' });
   } catch (err) {
     console.error(err);
@@ -242,7 +249,8 @@ function handleLogin(p) {
   }
   loginThrottle(email, false);
   return json({ ok: true, token: makeToken(email), name: String(staff.Name),
-    branch: String(staff.Branch), staffNo: staffNo });
+    branch: String(staff.Branch), staffNo: staffNo,
+    admin: String(staff.Admin).trim().toUpperCase() === 'YES' });
 }
 
 function handleBid(p) {
@@ -328,4 +336,125 @@ function handleBid(p) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ── admin portal (bids/admin.html) ──────────────────────────────────────
+   Reports + auction editor. Every action re-verifies the token AND that the
+   staff row is Active=YES with Admin=YES - the page itself is not trusted. */
+
+function adminAuth(token) {
+  const email = checkToken(token);
+  if (!email) return null;
+  const s = sheetRows('Staff', STAFF_COLS).find(x =>
+    String(x.Email).trim().toLowerCase() === email &&
+    String(x.Active).trim().toUpperCase() === 'YES' &&
+    String(x.Admin).trim().toUpperCase() === 'YES');
+  return s ? { staff: s, email: email } : null;
+}
+
+function fmtCell(v, withTime) {
+  if (v instanceof Date)
+    return Utilities.formatDate(v, TZ, withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd');
+  return String(v == null ? '' : v);
+}
+
+// Every auction row WITH its sheet row number, so the editor can write back.
+function auctionTable() {
+  const sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Auctions');
+  const values = sh.getDataRange().getValues();
+  const head = values[0].map(String);
+  return values.slice(1).map((r, i) => {
+    const o = { row: i + 2 };
+    AUCTION_COLS.forEach(c => {
+      const j = head.indexOf(c);
+      const v = j >= 0 ? r[j] : '';
+      o[c] = (c === 'BidCutoff') ? fmtCell(v, true)
+        : (c === 'AuctionDate' || c === 'SettlementDate') ? fmtCell(v, false)
+        : (v instanceof Date ? fmtCell(v, true) : v);
+    });
+    return o;
+  });
+}
+
+function handleAdminData(p) {
+  if (!adminAuth(p.token)) return json({ ok: false, error: 'Admin session expired - please log in again' });
+  let bids = sheetRows('Bids', BID_COLS).map(r => {
+    const o = {};
+    BID_COLS.forEach(c => { o[c] = (r[c] instanceof Date)
+      ? Utilities.formatDate(r[c], TZ, 'yyyy-MM-dd HH:mm:ss') : r[c]; });
+    return o;
+  });
+  if (p.auctionNo) bids = bids.filter(b => String(b.AuctionNo) === String(p.auctionNo));
+  return json({ ok: true, auctions: auctionTable(), bids: bids, live: activeAuction() });
+}
+
+// Validates one auction row from the editor; {err} or {vals} in AUCTION_COLS order.
+function checkAuctionInput(a) {
+  const t = k => String(a[k] == null ? '' : a[k]).trim();
+  const active = t('Active').toUpperCase();
+  if (['YES', 'CLOSED', 'NO'].indexOf(active) < 0) return { err: 'Active must be YES, CLOSED or NO' };
+  if (!t('AuctionNo')) return { err: 'Auction number is required' };
+  if (!t('Security')) return { err: 'Security is required' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t('AuctionDate'))) return { err: 'Auction date is required (yyyy-MM-dd)' };
+  if (t('SettlementDate') && !/^\d{4}-\d{2}-\d{2}$/.test(t('SettlementDate')))
+    return { err: 'Settlement date must be yyyy-MM-dd, or blank = day after the auction' };
+  const cut = t('BidCutoff').replace('T', ' ');
+  if (cut && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(cut))
+    return { err: 'Deadline must be yyyy-MM-dd HH:mm, or blank = 5:00 PM the day before the auction' };
+  const num = k => Number(String(a[k] == null ? '' : a[k]).replace(/[, ]/g, ''));
+  const minBid = num('MinBidTZS'), mult = num('MultipleTZS');
+  const pMin = num('PriceMin'), pMax = num('PriceMax');
+  const maxWap = t('MaxWapTZS') === '' ? 0 : num('MaxWapTZS');
+  if (!(minBid > 0)) return { err: 'Minimum bid must be a positive number' };
+  if (!(mult > 0)) return { err: 'Multiples must be a positive number' };
+  if (!(pMin > 0 && pMax > pMin)) return { err: 'Price band needs 0 < min < max' };
+  if (!(maxWap >= 0)) return { err: 'WAP cap must be a number (0 = no cap)' };
+  const tenors = t('Tenors');
+  if (tenors && !/^\d+(\s*,\s*\d+)*$/.test(tenors))
+    return { err: 'Tenors must be blank (bond) or a comma list of days e.g. 91,182,364' };
+  return { vals: [active, safe(t('AuctionNo')), safe(t('Security')), safe(t('Coupon')), safe(t('ISIN')),
+    t('AuctionDate'), t('SettlementDate'), safe(t('MaturityPeriod')), tenors,
+    minBid, mult, pMin, pMax, maxWap, cut, safe(t('Notes'))] };
+}
+
+function handleAdminSaveAuction(p) {
+  if (!adminAuth(p.token)) return json({ ok: false, error: 'Admin session expired - please log in again' });
+  const chk = checkAuctionInput(p.auction || {});
+  if (chk.err) return json({ ok: false, error: chk.err });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    ensureTabs();
+    const sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Auctions');
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const row = Number(p.row) || 0;
+    if (row && (row < 2 || row > sh.getLastRow()))
+      return json({ ok: false, error: 'That auction row no longer exists - refresh and try again' });
+    const target = row || sh.getLastRow() + 1;
+    AUCTION_COLS.forEach((c, i) => {
+      const j = head.indexOf(c);
+      if (j >= 0) sh.getRange(target, j + 1).setValue(chk.vals[i]);
+    });
+    return json({ ok: true, row: target, live: activeAuction() });
+  } finally { lock.releaseLock(); }
+}
+
+// Quick open/close/hide without editing the whole row.
+function handleAdminSetActive(p) {
+  if (!adminAuth(p.token)) return json({ ok: false, error: 'Admin session expired - please log in again' });
+  const active = String(p.active || '').trim().toUpperCase();
+  if (['YES', 'CLOSED', 'NO'].indexOf(active) < 0) return json({ ok: false, error: 'Active must be YES, CLOSED or NO' });
+  const row = Number(p.row) || 0;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Auctions');
+    if (row < 2 || row > sh.getLastRow())
+      return json({ ok: false, error: 'That auction row no longer exists - refresh and try again' });
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const j = head.indexOf('Active');
+    if (j < 0) return json({ ok: false, error: 'Active column missing in the Auctions tab' });
+    sh.getRange(row, j + 1).setValue(active);
+    return json({ ok: true, row: row, live: activeAuction() });
+  } finally { lock.releaseLock(); }
 }
