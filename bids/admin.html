@@ -172,7 +172,7 @@
           <div class="hint">Set in the AdminPin column of the staff list</div></div>
         <div class="note bad" id="login-err" style="display:none"></div>
         <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
-        <div class="hint" style="margin-top:12px; font-size:11.5px; color:var(--muted)">Only staff marked as Admin on the staff list can enter. Bid entry happens in the <a href="index.html">staff portal</a>.</div>
+        <div class="hint" style="margin-top:12px; font-size:11.5px; color:var(--muted)">Only e-mails configured as admins can enter. Bid entry happens in the <a href="index.html">staff portal</a>.</div>
       </div>
     </section>
 
@@ -272,6 +272,21 @@ const CONFIG = {
 const DEMO = !CONFIG.API_URL;
 const STAFF_DOMAIN = "crdbbank.co.tz";
 
+// Demo-mode copy of the admin allowlist. The LIVE authority is the
+// ADMIN_EMAILS list in the backend script (bids-apps-script.gs) - keep the
+// two lists identical when admins change.
+const ADMIN_EMAILS = [
+  "lwitiko.mbilinyi@crdbbank.co.tz",
+  "stephanieshambwe@crdbbank.co.tz",
+  "mustafa.haji@crdbbank.co.tz",
+  "neema.masumba@crdbbank.co.tz",
+  "mary.mponda@crdbbank.co.tz",
+  "ziada.yusuph@crdbbank.co.tz",
+  "annandumi.meena@crdbbank.co.tz",
+  "patrick.james@crdbbank.co.tz",
+];
+const NOT_ADMIN_MSG = "User not defined as admin - please contact the system admin for configuration.";
+
 const BID_COLS = ["Received","BidRef","AuctionNo","Security","StaffEmail","StaffNumber",
   "InvestorFullNames","NatureOfInvestor","SecuritiesAccountNumber","FaceValueTZS","PriceType",
   "CleanPricePer100","ConsiderationTZS","AccountToDebit","Branch","ResponsiblePerson",
@@ -328,6 +343,8 @@ function demoApi(body){
   if(body.action === "login"){
     if(!staffEmailOk(body.email) || !/^\d{1,5}$/.test(body.staffNo))
       return { ok:false, error:"Use your @" + STAFF_DOMAIN + " e-mail and your staff number (digits, max 5)" };
+    if(ADMIN_EMAILS.indexOf(String(body.email).trim().toLowerCase()) < 0)
+      return { ok:false, error: NOT_ADMIN_MSG };
     const name = body.email.split("@")[0].split(/[._]/)
       .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
     return { ok:true, token:"demo", name: name, branch:"Head Office (demo)", staffNo: body.staffNo, admin: true };
@@ -729,7 +746,7 @@ async function login(){
       if(j.pinRequired) $("#f-adminpin").style.display = "";
       throw new Error(j.error || "sign-in failed");
     }
-    if(!j.admin) throw new Error("This account is not an admin. Ask the desk to mark Admin = YES for you on the staff list.");
+    if(!j.admin) throw new Error(NOT_ADMIN_MSG);
     state.token = j.token;
     state.staff = { email: email, name: j.name };
     try{ sessionStorage.setItem("bid-admin-session", JSON.stringify({ token: state.token, staff: state.staff })); }catch(e){}
@@ -769,7 +786,7 @@ $("#btn-logout").addEventListener("click", logout);
 (function init(){
   $("#loginStaffNo").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 5); });
   if(DEMO){
-    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sample bids are shown; changes are not saved anywhere. Sign in with your @' + STAFF_DOMAIN + ' e-mail and staff number to preview. Once live, only staff marked Admin = YES on the staff list can enter.</div>';
+    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sample bids are shown; changes are not saved anywhere. Sign in with one of the configured admin e-mails (any staff number works in the demo) to preview — other e-mails are refused, exactly as they will be live.</div>';
   }
   try{
     const s = JSON.parse(sessionStorage.getItem("bid-admin-session") || "null");
