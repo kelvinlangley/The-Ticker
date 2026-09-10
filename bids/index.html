@@ -256,8 +256,8 @@
 const CONFIG = {
   // Google Apps Script Web App URL for the bids backend
   // (cds/backend/bids-apps-script.gs). Leave "" for demo mode: a sample
-  // auction is shown, any @crdbbank.co.tz e-mail with staff number 10001
-  // can sign in, nothing is sent.
+  // auction is shown, any @crdbbank.co.tz e-mail with any staff number
+  // (digits, max 5) can sign in, nothing is sent.
   API_URL: "",
 };
 const DEMO = !CONFIG.API_URL;
@@ -388,8 +388,12 @@ function tickCutoff(){
   $("#bidform").style.display = open ? "" : "none";
   $("#closed-card").style.display = open ? "none" : "block";
   if(!open){
-    $("#closed-msg").innerHTML = "The submission deadline for <b>AUCTION " + esc(a.auctionNo) +
-      " — " + esc(a.security) + "</b>" + (a.deadline ? " passed on <b>" + esc(a.deadline) + "</b> (EAT)" : " has passed") +
+    // say "passed on <deadline>" only when it truly has - an admin can also
+    // close early (Active=CLOSED) while the deadline is still in the future
+    const t = a.cutoff ? new Date(String(a.cutoff).replace(" ", "T") + ":00+03:00") : null;
+    const passed = !!t && !isNaN(t) && new Date() >= t;
+    $("#closed-msg").innerHTML = "Submissions for <b>AUCTION " + esc(a.auctionNo) +
+      " — " + esc(a.security) + "</b>" + (passed && a.deadline ? " closed on <b>" + esc(a.deadline) + "</b> (EAT)" : " are closed") +
       ". Please consider participating in the next auction — the portal reopens when the next BOT call for tender is issued.";
   }
   $("#btn-review").disabled = !open;
