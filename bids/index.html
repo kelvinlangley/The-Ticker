@@ -318,7 +318,8 @@ function demoApi(body){
   }
   if(body.action === "bid")
     return { ok:true, ref:"BID-DEMO-" + String(Math.floor(Math.random()*9000)+1000),
-      at: new Date().toISOString().slice(0,19).replace("T"," ") };
+      // East Africa Time, like the live backend stamps it
+      at: new Date().toLocaleString("sv-SE", { timeZone: "Africa/Dar_es_Salaam" }) };
   return { ok:false, error:"unknown" };
 }
 
@@ -563,9 +564,16 @@ function enterPortal(){
   $("#staff-email").textContent = state.staff.email;
   $("#staffbar").style.display = "flex";
   if(!$("#responsible").value) $("#responsible").value = state.staff.name || "";
-  if(!state._r) state._r = setInterval(() => {
-    if($("#v-portal").classList.contains("active") && !document.hidden && !$("#dlg").open) loadAuction();
-  }, 120000);
+  if(!state._r){
+    state._r = setInterval(() => {
+      if($("#v-portal").classList.contains("active") && !document.hidden && !$("#dlg").open) loadAuction();
+    }, 120000);
+    // refresh immediately when the app comes back on screen, so an admin
+    // close/open shows without waiting for the 2-minute tick
+    document.addEventListener("visibilitychange", () => {
+      if(!document.hidden && $("#v-portal").classList.contains("active") && !$("#dlg").open) loadAuction();
+    });
+  }
   show("v-portal"); loadAuction();
 }
 function logout(){
