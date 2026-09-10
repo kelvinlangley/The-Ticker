@@ -195,11 +195,19 @@ staff-portal session can never call admin endpoints. Two tabs:
   "Save as PDF". Auto-refreshes every 2 minutes while open.
 - **Auction Setup** — list of all auction rows with status badges and
   one-click **Open / Close now / Hide**, plus a full editor for creating the
-  next auction or amending one (dates, minimum, multiples, price band,
-  tenors, WAP cap, deadline override for grace periods, notes). Saves write
-  to the Auctions tab, so the staff portal reflects changes within
+  next auction or amending one. Desk defaults are pre-filled as numbers
+  (minimum bid 1,000,000; multiples 100,000) and the clean-price sanity
+  band is automatic (50–200 per 100 — no field to fill). Saves write to
+  the Auctions tab, so the staff portal reflects changes within
   ~2 minutes; the Sheet remains the master record and can still be edited
   directly.
+- **Master admin** — the `MASTER_ADMIN` e-mail in the script additionally
+  gets a **Login Activity** tab (every admin sign-in, failed attempt,
+  lockout and password creation — recorded on the `AdminLog` sheet tab,
+  last 200 events shown) and a master-only **Delete** button per auction.
+  Deleting removes the auction definition only: its recorded bids stay in
+  the register and remain downloadable (the report dropdown lists them as
+  "deleted · archived bids").
 
 Setup mirrors the account form: blank Sheet → paste the script → set
 `SHEET_ID` and a random `TOKEN_SECRET` → Run `setup()` once → deploy as Web

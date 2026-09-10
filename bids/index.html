@@ -356,7 +356,6 @@ async function loadAuction(){
         <span class="chip"><span>Settlement</span><b>${esc(a.settlementDate)}</b></span>
         <span class="chip"><span>Minimum bid</span><b>TZS ${fmtTZS(a.minBid)}</b></span>
         <span class="chip"><span>Multiples of</span><b>TZS ${fmtTZS(a.multiple)}</b></span>
-        <span class="chip"><span>Clean price band /100</span><b>${esc(a.priceMin)} – ${esc(a.priceMax)}</b></span>
       </div>
       <div class="cutoff" id="cutoff"></div>
       ${a.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(a.notes)}</div>` : ""}`;
