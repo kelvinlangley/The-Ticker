@@ -23,15 +23,16 @@
 //              offered tenors e.g. "35,91,182,364". MaxWapTZS caps one
 //              client's total WAP (price-taking) amount in this auction
 //              (0/blank = no cap).
-//   Staff    - Email / Name / Branch / StaffNumber / Active / Admin /
-//              AdminPin. Staff log in with their CRDB e-mail (must end
-//              @crdbbank.co.tz) and their staff number (digits, max 5) as the
-//              PIN. Only Active=YES rows can log in. Admin=YES additionally
-//              unlocks the admin portal (bids/admin.html): bid reports with
-//              Excel/PDF download and an auction editor that writes to the
-//              Auctions tab. STRONGLY RECOMMENDED for admins: type a long
-//              AdminPin - the admin portal then requires it on sign-in, so a
-//              guessable staff number alone can never open the reports.
+//   Staff    - Email / Name / Branch / StaffNumber / Active / AdminPin.
+//              Staff log in with their CRDB e-mail (must end @crdbbank.co.tz)
+//              and their staff number (digits, max 5) as the PIN. Only
+//              Active=YES rows can log in. The ADMIN PORTAL (bids/admin.html)
+//              additionally admits ONLY the e-mails in the ADMIN_EMAILS list
+//              below - every other e-mail is told to contact the system
+//              admin. Each admin must also be a normal Active=YES staff row.
+//              STRONGLY RECOMMENDED for admins: type a long AdminPin - the
+//              admin portal then requires it on sign-in, so a guessable
+//              staff number alone can never open the reports.
 //              Re-pasting a newer script version is safe: missing columns are
 //              added to existing tabs automatically on the next request.
 //   Bids     - one row per submitted bid, in the report column order
@@ -55,7 +56,25 @@ const MAX_FACE_TZS = 500e9; // sanity ceiling per bid
 const AUCTION_COLS = ['Active', 'AuctionNo', 'Security', 'Coupon', 'ISIN',
   'AuctionDate', 'SettlementDate', 'MaturityPeriod', 'Tenors', 'MinBidTZS',
   'MultipleTZS', 'PriceMin', 'PriceMax', 'MaxWapTZS', 'BidCutoff', 'Notes'];
-const STAFF_COLS = ['Email', 'Name', 'Branch', 'StaffNumber', 'Active', 'Admin', 'AdminPin'];
+const STAFF_COLS = ['Email', 'Name', 'Branch', 'StaffNumber', 'Active', 'AdminPin'];
+
+// The ONLY e-mails allowed into the admin portal (bid reports, Excel/PDF
+// downloads, auction editor). To change admins: edit this list, then
+// Deploy > Manage deployments > Edit > New version. Each admin must also be
+// on the Staff tab (Active=YES) with their staff number, and should have a
+// long AdminPin there.
+const ADMIN_EMAILS = [
+  'lwitiko.mbilinyi@crdbbank.co.tz',
+  'stephanieshambwe@crdbbank.co.tz',
+  'mustafa.haji@crdbbank.co.tz',
+  'neema.masumba@crdbbank.co.tz',
+  'mary.mponda@crdbbank.co.tz',
+  'ziada.yusuph@crdbbank.co.tz',
+  'annandumi.meena@crdbbank.co.tz',
+  'patrick.james@crdbbank.co.tz',
+];
+const isAdminEmail = e => ADMIN_EMAILS.indexOf(String(e || '').trim().toLowerCase()) >= 0;
+const NOT_ADMIN_MSG = 'User not defined as admin - please contact the system admin for configuration.';
 const BID_COLS = ['Received', 'BidRef', 'AuctionNo', 'Security', 'StaffEmail',
   'StaffNumber', 'InvestorFullNames', 'NatureOfInvestor', 'SecuritiesAccountNumber',
   'FaceValueTZS', 'PriceType', 'CleanPricePer100', 'ConsiderationTZS',
@@ -115,8 +134,8 @@ function setup() {
   if (staff.getLastRow() === 1) {
     // Deliberately Active=NO: these sample credentials are public (they sit
     // in the repo), so the row is a TEMPLATE only. Add your real staff with
-    // Active=YES; give admins a long AdminPin.
-    staff.appendRow(['sample.staff@' + STAFF_DOMAIN, 'Sample Staff (template - replace)', 'Head Office', '10001', 'NO', 'YES', '']);
+    // Active=YES; give the ADMIN_EMAILS people a long AdminPin.
+    staff.appendRow(['sample.staff@' + STAFF_DOMAIN, 'Sample Staff (template - replace)', 'Head Office', '10001', 'NO', '']);
   }
 }
 
@@ -264,6 +283,8 @@ function handleLogin(p) {
   const staffNo = String(p.staffNo || '').trim();
   if (!staffEmailOk(email)) return json({ ok: false, error: 'Use your CRDB e-mail (…@' + STAFF_DOMAIN + ')' });
   if (!/^\d{1,5}$/.test(staffNo)) return json({ ok: false, error: 'Staff number is digits only, up to 5' });
+  // the admin portal admits only the configured admin e-mails
+  if (p.wantAdmin && !isAdminEmail(email)) return json({ ok: false, error: NOT_ADMIN_MSG });
   if (loginThrottle(email)) return json({ ok: false, error: 'Too many attempts - locked for 15 minutes' });
   const staff = sheetRows('Staff', STAFF_COLS).find(s =>
     String(s.Email).trim().toLowerCase() === email &&
@@ -273,15 +294,10 @@ function handleLogin(p) {
     const locked = loginThrottle(email, true);
     return json({ ok: false, error: locked ? 'Too many attempts - locked for 15 minutes' : 'E-mail and staff number do not match our staff list' });
   }
-  const isAdmin = String(staff.Admin).trim().toUpperCase() === 'YES';
-  // Admin portal sign-in (wantAdmin): if the row has an AdminPin, the staff
-  // number alone is NOT enough - the pin must match too. Wrong pins count
-  // toward the same 5-failure lockout.
+  // Admin portal sign-in (wantAdmin, allowlisted above): if the row has an
+  // AdminPin, the staff number alone is NOT enough - the pin must match too.
+  // Wrong pins count toward the same 5-failure lockout.
   if (p.wantAdmin) {
-    if (!isAdmin) {
-      loginThrottle(email, false);
-      return json({ ok: false, error: 'This account is not an admin. Ask the desk to mark Admin = YES for you on the staff list.' });
-    }
     const pin = String(staff.AdminPin == null ? '' : staff.AdminPin).trim();
     if (pin && String(p.adminPin || '').trim() !== pin) {
       const locked = loginThrottle(email, true);
@@ -294,7 +310,7 @@ function handleLogin(p) {
   }
   loginThrottle(email, false);
   return json({ ok: true, token: makeToken(email, 'staff'), name: String(staff.Name),
-    branch: String(staff.Branch), staffNo: staffNo, admin: isAdmin });
+    branch: String(staff.Branch), staffNo: staffNo, admin: isAdminEmail(email) });
 }
 
 function handleBid(p) {
@@ -383,16 +399,16 @@ function handleBid(p) {
 }
 
 /* ── admin portal (bids/admin.html) ──────────────────────────────────────
-   Reports + auction editor. Every action re-verifies the token AND that the
-   staff row is Active=YES with Admin=YES - the page itself is not trusted. */
+   Reports + auction editor. Every action re-verifies the admin token, that
+   the e-mail is in ADMIN_EMAILS, and that the staff row is still Active=YES
+   - the page itself is not trusted. */
 
 function adminAuth(token) {
   const email = checkToken(token, 'admin');
-  if (!email) return null;
+  if (!email || !isAdminEmail(email)) return null;
   const s = sheetRows('Staff', STAFF_COLS).find(x =>
     String(x.Email).trim().toLowerCase() === email &&
-    String(x.Active).trim().toUpperCase() === 'YES' &&
-    String(x.Admin).trim().toUpperCase() === 'YES');
+    String(x.Active).trim().toUpperCase() === 'YES');
   return s ? { staff: s, email: email } : null;
 }
 
