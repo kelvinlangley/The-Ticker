@@ -136,13 +136,13 @@
       <div class="card center">
         <h3>Staff sign-in</h3>
         <div class="f">
-          <label for="loginEmail">CRDB e-mail <span class="req">*</span></label>
-          <input id="loginEmail" type="email" autocomplete="username" placeholder="kelvin.njelekela@crdbbank.co.tz">
+          <label for="loginEmail">Staff Email <span class="req">*</span></label>
+          <input id="loginEmail" type="email" autocomplete="username">
           <div class="err">Must be a @crdbbank.co.tz address</div>
         </div>
         <div class="f">
-          <label for="loginStaffNo">Staff number <span class="req">*</span></label>
-          <input id="loginStaffNo" type="password" inputmode="numeric" maxlength="5" autocomplete="current-password" placeholder="digits, max 5">
+          <label for="loginStaffNo">Staff Number <span class="req">*</span></label>
+          <input id="loginStaffNo" type="password" inputmode="numeric" maxlength="5" autocomplete="current-password">
           <div class="err">Digits only, up to 5</div>
         </div>
         <div class="note bad" id="login-err" style="display:none"></div>
@@ -297,10 +297,13 @@ async function api(body){
   return res.json();
 }
 function demoApi(body){
-  if(body.action === "login")
-    return staffEmailOk(body.email) && body.staffNo === "10001"
-      ? { ok:true, token:"demo", name:"Sample Staff", branch:"Head Office (demo)", staffNo:"10001" }
-      : { ok:false, error:"E-mail and staff number do not match (demo accepts any @" + STAFF_DOMAIN + " e-mail with staff number 10001)" };
+  if(body.action === "login"){
+    if(!staffEmailOk(body.email) || !/^\d{1,5}$/.test(body.staffNo))
+      return { ok:false, error:"Use your @" + STAFF_DOMAIN + " e-mail and your staff number (digits, max 5)" };
+    const name = body.email.split("@")[0].split(/[._]/)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return { ok:true, token:"demo", name: name, branch:"Head Office (demo)", staffNo: body.staffNo };
+  }
   if(body.action === "bid")
     return { ok:true, ref:"BID-DEMO-" + String(Math.floor(Math.random()*9000)+1000),
       at: new Date().toISOString().slice(0,19).replace("T"," ") };
@@ -565,7 +568,7 @@ $("#btn-logout").addEventListener("click", logout);
   });
   $("#accountToDebit").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 16); });
   if(DEMO){
-    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with any @' + STAFF_DOMAIN + ' e-mail and staff number <b>10001</b> to preview; submitted bids go nowhere. The admin connects the live backend in CONFIG.API_URL.</div>';
+    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with your @' + STAFF_DOMAIN + ' e-mail and staff number to preview; submitted bids go nowhere. Once the live backend is connected, only staff on the admin staff list can sign in. The admin connects the live backend in CONFIG.API_URL.</div>';
   }
   try{
     const s = JSON.parse(sessionStorage.getItem("bid-session") || "null");
