@@ -64,6 +64,7 @@ const STAFF_COLS = ['Email', 'Name', 'Branch', 'StaffNumber', 'Active', 'AdminPi
 // on the Staff tab (Active=YES) with their staff number, and should have a
 // long AdminPin there.
 const ADMIN_EMAILS = [
+  'kelvin.njelekela@crdbbank.co.tz', // main admin
   'lwitiko.mbilinyi@crdbbank.co.tz',
   'stephanieshambwe@crdbbank.co.tz',
   'mustafa.haji@crdbbank.co.tz',
