@@ -142,20 +142,23 @@ A companion **staff-only portal** for entering client bids in BOT auctions
 (modeled on **CDS/FORM/03**: up to 4 bid lines, face value + price per 100 at
 4 decimals). One Google Sheet drives it, via `backend/bids-apps-script.gs`:
 
-- **Staff tab** — Email / Name / Branch / StaffNumber / Active / AdminPin.
-  Staff sign in with their `@crdbbank.co.tz` e-mail plus their staff number
-  (digits, ≤5). Login is verified *server-side* and issues a same-day token;
-  bids without a valid token are rejected by the server, so only listed
-  staff can submit. **Admin access is a fixed allowlist**: only the e-mails
-  in the script's `ADMIN_EMAILS` list can enter the admin portal (anyone
-  else sees "User not defined as admin — please contact the system admin for
-  configuration"); to change admins, edit that list and deploy a new
-  version. Each admin also needs a normal Active staff row, and **give every
-  admin a long `AdminPin`**: the admin portal then demands it at sign-in, so
-  a guessable staff number alone can never open the client register.
-  `setup()` seeds one **inactive** sample row as a template (its details are
-  public in this repo — replace it with real staff and leave it
-  `Active = NO` or delete it).
+- **Staff sign-in (no register)** — staff are many, so they are *not*
+  listed anywhere: any e-mail ending `@crdbbank.co.tz` plus a staff number
+  (digits, ≤5) signs in to the staff portal, and every bid records both.
+  This deliberately trusts the company e-mail format; the deadline, field
+  validation and the admin's register review are the controls on content.
+- **Admins tab** — Email / Name / Branch / Password / AdminPin / Active:
+  the **admin access list**, seeded automatically from the script's
+  `ADMIN_EMAILS` the first time; after that, add or remove admin rows in
+  the tab directly (no redeploy). Any other e-mail trying the admin portal
+  sees "User not defined as admin — please contact the system admin for
+  configuration". **First sign-in**: each admin creates their own password
+  in the portal; the server stores it in the tab and generates a random
+  **4-digit Admin PIN** shown once — both are required at every sign-in.
+  Five wrong attempts lock the e-mail for 10 minutes. **Reset**: clear the
+  person's Password cell; on their next sign-in they create a new password
+  and receive a new PIN. Passwords sit in the Sheet in clear text so the
+  main admin can help people — protect the Sheet itself accordingly.
 - **Auctions tab** — one row per auction (number, security, coupon, ISIN,
   dates, min bid, multiple, price band). The `Active` column is the admin
   switch: `YES` = open, `CLOSED` = staff see a thank-you note that the
@@ -178,12 +181,11 @@ digits, client e-mail required, deadline respected.
 ### Admin portal (`../bids/admin.html`)
 
 A companion **admin-only portal** on the same backend (same `/exec` URL in
-its `CONFIG.API_URL`). Sign-in is the same staff e-mail + staff number, but
-the server additionally requires the e-mail to be on the `ADMIN_EMAILS`
-allowlist in the script — every other e-mail is refused with "User not
-defined as admin" — and, when the staff row has an `AdminPin`, that PIN as
-well (the field appears automatically). Admin sessions use a separate token
-scope, so a staff-portal session can never call admin endpoints. Two tabs:
+its `CONFIG.API_URL`). Sign-in is the admin's e-mail + the password they
+created on first sign-in + their generated 4-digit Admin PIN; only e-mails
+on the Admins tab are accepted — every other e-mail is refused with "User
+not defined as admin". Admin sessions use a separate token scope, so a
+staff-portal session can never call admin endpoints. Two tabs:
 
 - **Bid Reports** — pick any auction; totals at a glance (bids, total face
   value, clean vs WAP split, consideration) above the full register, one row

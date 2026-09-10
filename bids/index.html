@@ -147,7 +147,7 @@
         </div>
         <div class="note bad" id="login-err" style="display:none"></div>
         <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
-        <p class="hint" style="font-size:12px; color:var(--muted); margin:12px 0 0">Access is limited to authorised CRDB staff on the brokerage staff list.</p>
+        <p class="hint" style="font-size:12px; color:var(--muted); margin:12px 0 0">For CRDB staff — sign in with your work e-mail and staff number. Every bid records who entered it.</p>
       </div>
     </section>
 
@@ -237,7 +237,7 @@
   </div>
 </main>
 
-<div class="foot">CRDB Brokerage staff portal · Bids feed the desk's register for lodgment with the Bank of Tanzania. <b>Admin:</b> auctions, staff access and the bid register live in the portal's Google Sheet (Auctions / Staff / Bids tabs).</div>
+<div class="foot">CRDB Brokerage staff portal · Bids feed the desk's register for lodgment with the Bank of Tanzania. <b>Admin:</b> auctions, admin access and the bid register live in the portal's Google Sheet (Auctions / Admins / Bids tabs).</div>
 
 <dialog id="dlg">
   <div class="dlg-body">
@@ -453,6 +453,7 @@ function newSubmitId(){
 function buildPayload(){
   return {
     action: "bid", token: state.token, auctionNo: state.auction.auctionNo,
+    staffNo: state.staff.staffNo,
     submitId: newSubmitId(),
     investorNames: $("#investorNames").value.trim(),
     nature: radioVal("nature"),
@@ -611,7 +612,7 @@ $("#btn-logout").addEventListener("click", logout);
   live($("#securitiesAccount"), v => !/^(BOTCDSB026|BOTCDSCORU)\d{4,8}$/.test(v.toUpperCase()));
   live($("#accountToDebit"), v => !/^\d{10,13}$/.test(v));
   if(DEMO){
-    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with your @' + STAFF_DOMAIN + ' e-mail and staff number to preview; submitted bids go nowhere. Once the live backend is connected, only staff on the admin staff list can sign in. The admin connects the live backend in CONFIG.API_URL.</div>';
+    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with your @' + STAFF_DOMAIN + ' e-mail and staff number to preview; submitted bids go nowhere. The admin connects the live backend in CONFIG.API_URL.</div>';
   }
   try{
     const s = JSON.parse(sessionStorage.getItem("bid-session") || "null");

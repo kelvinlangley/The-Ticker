@@ -164,14 +164,38 @@
         <div class="f"><label for="loginEmail">Staff Email</label>
           <input id="loginEmail" type="email" autocomplete="username">
           <div class="err">Use your @crdbbank.co.tz e-mail</div></div>
-        <div class="f"><label for="loginStaffNo">Staff Number</label>
-          <input id="loginStaffNo" inputmode="numeric" autocomplete="off">
-          <div class="err">Digits only, up to 5</div></div>
-        <div class="f" id="f-adminpin" style="display:none"><label for="loginAdminPin">Admin PIN</label>
-          <input id="loginAdminPin" type="password" autocomplete="off">
-          <div class="hint">Set in the AdminPin column of the staff list</div></div>
-        <div class="note bad" id="login-err" style="display:none"></div>
-        <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
+        <div id="login-normal">
+          <div class="f"><label for="loginPassword">Password</label>
+            <input id="loginPassword" type="password" autocomplete="current-password">
+            <div class="hint">First time here? Leave it empty and press Sign in — you will create it.</div></div>
+          <div class="f"><label for="loginAdminPin">Admin PIN</label>
+            <input id="loginAdminPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+            <div class="hint">The 4-digit code you received when you created your password</div></div>
+          <div class="note bad" id="login-err" style="display:none"></div>
+          <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
+        </div>
+        <div id="login-setup" style="display:none">
+          <div class="note"><b>First sign-in — create your password.</b> You will then receive your personal 4-digit Admin PIN. Both are needed every time you sign in.</div>
+          <div class="f"><label for="newPassword">Create password</label>
+            <input id="newPassword" type="password" autocomplete="new-password">
+            <div class="hint">8 to 64 characters</div>
+            <div class="err">8 to 64 characters, not starting with = + - @ or an apostrophe</div></div>
+          <div class="f"><label for="confirmPassword">Repeat password</label>
+            <input id="confirmPassword" type="password" autocomplete="new-password">
+            <div class="err">Does not match the password above</div></div>
+          <div class="note bad" id="setup-err" style="display:none"></div>
+          <div style="display:flex; gap:10px">
+            <button type="button" class="btn" id="btn-setup-back">◀ Back</button>
+            <button type="button" class="btn primary" id="btn-create" style="flex:1">Create password</button>
+          </div>
+        </div>
+        <div id="login-pin" style="display:none; text-align:center">
+          <div style="font-size:38px">🔑</div>
+          <h2 style="margin:6px 0">Your Admin PIN</h2>
+          <div class="ref" id="pin-value" style="font-family:var(--mono); font-size:26px; font-weight:700; letter-spacing:.35em; background:var(--green-soft); border:1px solid var(--green-line); border-radius:8px; display:inline-block; padding:8px 18px; margin:8px 0"></div>
+          <p style="color:var(--ink2); font-size:13px">Write it down and keep it private — you will type it together with your password every time you sign in. It will not be shown again.</p>
+          <button type="button" class="btn primary" id="btn-pin-continue" style="width:100%">Continue to the portal</button>
+        </div>
         <div class="hint" style="margin-top:12px; font-size:11.5px; color:var(--muted)">Only e-mails configured as admins can enter. Bid entry happens in the <a href="index.html">staff portal</a>.</div>
       </div>
     </section>
@@ -272,9 +296,9 @@ const CONFIG = {
 const DEMO = !CONFIG.API_URL;
 const STAFF_DOMAIN = "crdbbank.co.tz";
 
-// Demo-mode copy of the admin allowlist. The LIVE authority is the
-// ADMIN_EMAILS list in the backend script (bids-apps-script.gs) - keep the
-// two lists identical when admins change.
+// Demo-mode copy of the admin list. LIVE authority is the Admins tab of the
+// Google Sheet (seeded from the backend script's ADMIN_EMAILS the first
+// time); this copy only drives the demo preview.
 const ADMIN_EMAILS = [
   "kelvin.njelekela@crdbbank.co.tz", // main admin
   "lwitiko.mbilinyi@crdbbank.co.tz",
@@ -307,6 +331,7 @@ const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0,
 
 /* ════════ demo backend ════════ */
 const demo = {
+  creds: {}, // demo password/PIN store: email -> { pw, pin }
   auctions: [
     { row: 2, Active: "NO", AuctionNo: "709", Security: "12.10% 15yrs T-Bond", Coupon: "12.10%",
       ISIN: "TZ1996106087", AuctionDate: "2099-08-05", SettlementDate: "2099-08-06", MaturityPeriod: "15 years",
@@ -341,14 +366,27 @@ const demo = {
   ],
 };
 function demoApi(body){
+  const demoName = e => String(e).split("@")[0].split(/[._]/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   if(body.action === "login"){
-    if(!staffEmailOk(body.email) || !/^\d{1,5}$/.test(body.staffNo))
-      return { ok:false, error:"Use your @" + STAFF_DOMAIN + " e-mail and your staff number (digits, max 5)" };
-    if(ADMIN_EMAILS.indexOf(String(body.email).trim().toLowerCase()) < 0)
-      return { ok:false, error: NOT_ADMIN_MSG };
-    const name = body.email.split("@")[0].split(/[._]/)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-    return { ok:true, token:"demo", name: name, branch:"Head Office (demo)", staffNo: body.staffNo, admin: true };
+    const em = String(body.email || "").trim().toLowerCase();
+    if(!staffEmailOk(em)) return { ok:false, error:"Use your @" + STAFF_DOMAIN + " e-mail" };
+    if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
+    const c = demo.creds[em];
+    if(!c) return { ok:false, setupRequired: true, error: "First sign-in - create your password below" };
+    if(String(body.password || "") !== c.pw || String(body.adminPin || "").trim() !== c.pin)
+      return { ok:false, error: "Wrong password or Admin PIN" };
+    return { ok:true, token:"demo", name: demoName(em), admin: true };
+  }
+  if(body.action === "adminSetPassword"){
+    const em = String(body.email || "").trim().toLowerCase();
+    if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
+    if(demo.creds[em]) return { ok:false, error: "A password already exists for this account. To reset it, the main admin clears the Password cell on the Admins tab - then create a new one here." };
+    const pw = String(body.password || "");
+    if(pw.length < 8 || pw.length > 64) return { ok:false, error: "Password must be 8 to 64 characters" };
+    const pin = String(Math.floor(1000 + Math.random() * 9000));
+    demo.creds[em] = { pw: pw, pin: pin };
+    return { ok:true, pin: pin, token: "demo", name: demoName(em), admin: true };
   }
   if(body.action === "adminData") return { ok:true, auctions: demo.auctions.map(a => ({...a})), bids: demo.bids.map(b => ({...b})) };
   if(body.action === "adminSaveAuction"){
@@ -737,31 +775,65 @@ $("#btn-refresh").addEventListener("click", async () => {
 });
 
 /* ════════ login/logout ════════ */
+function finishLogin(j, email){
+  state.token = j.token;
+  state.staff = { email: email, name: j.name };
+  try{ sessionStorage.setItem("bid-admin-session", JSON.stringify({ token: state.token, staff: state.staff })); }catch(e){}
+  $("#loginPassword").value = ""; $("#loginAdminPin").value = "";
+}
 async function login(){
+  if(state._busy) return; // Enter-key auto-repeat must not fire parallel tries
   const email = $("#loginEmail").value.trim().toLowerCase();
-  const staffNo = $("#loginStaffNo").value.trim();
   const eOK = setInvalid($("#loginEmail"), !staffEmailOk(email));
-  const nOK = setInvalid($("#loginStaffNo"), !/^\d{1,5}$/.test(staffNo));
-  if(!eOK || !nOK) return;
+  if(!eOK) return;
+  state._busy = true;
   const btn = $("#btn-login"); btn.disabled = true; btn.textContent = "Signing in…";
   $("#login-err").style.display = "none";
   try{
-    const j = await api({ action: "login", email: email, staffNo: staffNo,
-      wantAdmin: true, adminPin: $("#loginAdminPin").value });
+    const j = await api({ action: "login", email: email, wantAdmin: true,
+      password: $("#loginPassword").value, adminPin: $("#loginAdminPin").value.trim() });
     if(!j.ok){
-      if(j.pinRequired) $("#f-adminpin").style.display = "";
+      if(j.setupRequired){
+        // first sign-in: pin the e-mail and switch to the create-password step
+        $("#loginEmail").disabled = true;
+        $("#login-normal").style.display = "none";
+        $("#login-setup").style.display = "block";
+        $("#newPassword").focus();
+        return;
+      }
       throw new Error(j.error || "sign-in failed");
     }
     if(!j.admin) throw new Error(NOT_ADMIN_MSG);
-    state.token = j.token;
-    state.staff = { email: email, name: j.name };
-    try{ sessionStorage.setItem("bid-admin-session", JSON.stringify({ token: state.token, staff: state.staff })); }catch(e){}
-    $("#loginStaffNo").value = "";
+    finishLogin(j, email);
     await enterPortal();
   }catch(e){
     $("#login-err").style.display = "block";
     $("#login-err").innerHTML = "<b>Could not sign in.</b> " + esc(e.message);
-  }finally{ btn.disabled = false; btn.textContent = "Sign in"; }
+  }finally{ state._busy = false; btn.disabled = false; btn.textContent = "Sign in"; }
+}
+async function createPassword(){
+  if(state._busy) return;
+  const email = $("#loginEmail").value.trim().toLowerCase();
+  const pw = $("#newPassword").value, cf = $("#confirmPassword").value;
+  const pwOK = setInvalid($("#newPassword"), !(pw.length >= 8 && pw.length <= 64 && !/^[=+\-@']/.test(pw)));
+  const cfOK = setInvalid($("#confirmPassword"), cf !== pw);
+  if(!pwOK || !cfOK) return;
+  state._busy = true;
+  const btn = $("#btn-create"); btn.disabled = true; btn.textContent = "Creating…";
+  $("#setup-err").style.display = "none";
+  try{
+    const j = await api({ action: "adminSetPassword", email: email, password: pw });
+    if(!j.ok) throw new Error(j.error || "could not create the password");
+    finishLogin(j, email);
+    $("#newPassword").value = ""; $("#confirmPassword").value = "";
+    $("#login-setup").style.display = "none";
+    $("#pin-value").textContent = j.pin;
+    $("#login-pin").style.display = "block";
+    announce("Password created. Your Admin PIN is shown on screen.");
+  }catch(e){
+    $("#setup-err").style.display = "block";
+    $("#setup-err").innerHTML = "<b>Not created.</b> " + esc(e.message);
+  }finally{ state._busy = false; btn.disabled = false; btn.textContent = "Create password"; }
 }
 async function enterPortal(){
   $("#staff-name").textContent = state.staff.name;
@@ -782,17 +854,33 @@ function logout(){
   state.token = null; state.staff = null;
   try{ sessionStorage.removeItem("bid-admin-session"); }catch(e){}
   $("#staffbar").style.display = "none";
+  $("#loginEmail").disabled = false;
+  $("#login-normal").style.display = ""; $("#login-setup").style.display = "none"; $("#login-pin").style.display = "none";
   show("v-login");
 }
 $("#btn-login").addEventListener("click", login);
-$("#loginStaffNo").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
+$("#btn-create").addEventListener("click", createPassword);
+$("#btn-setup-back").addEventListener("click", () => {
+  $("#login-setup").style.display = "none"; $("#setup-err").style.display = "none";
+  $("#newPassword").value = ""; $("#confirmPassword").value = "";
+  $("#loginEmail").disabled = false;
+  $("#login-normal").style.display = "";
+});
+$("#newPassword").addEventListener("keydown", e => { if(e.key === "Enter") $("#confirmPassword").focus(); });
+$("#btn-pin-continue").addEventListener("click", async () => {
+  $("#login-pin").style.display = "none"; $("#login-normal").style.display = "";
+  await enterPortal();
+});
+$("#loginPassword").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
+$("#loginAdminPin").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
+$("#confirmPassword").addEventListener("keydown", e => { if(e.key === "Enter") createPassword(); });
 $("#btn-logout").addEventListener("click", logout);
 
 /* ════════ init ════════ */
 (function init(){
-  $("#loginStaffNo").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 5); });
+  $("#loginAdminPin").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); });
   if(DEMO){
-    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sample bids are shown; changes are not saved anywhere. Sign in with one of the configured admin e-mails (any staff number works in the demo) to preview — other e-mails are refused, exactly as they will be live.</div>';
+    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sample bids are shown; changes are not saved anywhere. Sign in with one of the configured admin e-mails to preview the full flow: your first sign-in asks you to create a password and shows your 4-digit Admin PIN. Other e-mails are refused, exactly as they will be live.</div>';
   }
   try{
     const s = JSON.parse(sessionStorage.getItem("bid-admin-session") || "null");
