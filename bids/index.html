@@ -88,7 +88,7 @@
   .cutoff.open{color:var(--green2)} .cutoff.closed{color:var(--bad)}
 
   /* bid lines */
-  .line{display:grid; grid-template-columns:36px 1.2fr 1.4fr 1.1fr 36px; gap:10px; align-items:start; padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:10px; background:var(--card2)}
+  .line{display:grid; grid-template-columns:32px repeat(auto-fit, minmax(130px, 1fr)) 36px; gap:10px; align-items:start; padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:10px; background:var(--card2)}
   .line .n{font-family:var(--mono); font-weight:600; color:var(--green2); padding-top:32px; text-align:center}
   .line .del{padding-top:28px}
   .line .del button{width:30px; height:30px; border-radius:50%; border:1px solid var(--border2); background:#fff; color:var(--bad); font-weight:700; cursor:pointer}
@@ -167,11 +167,16 @@
             <div class="f"><label for="clientName">Client name (as on the CDS account) <span class="req">*</span></label>
               <input id="clientName" autocomplete="off"><div class="err">Required</div></div>
             <div class="f"><label for="clientCDS">Client CDS account No. <span class="req">*</span></label>
-              <input id="clientCDS" inputmode="numeric" autocomplete="off" placeholder="digits only">
-              <div class="err">Digits only, up to 12</div></div>
+              <input id="clientCDS" autocomplete="off" placeholder="digits only">
+              <label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--ink2);font-weight:500;margin-top:2px"><input type="checkbox" id="cdsPending" style="accent-color:var(--green)"> CDS application still pending — enter the application reference instead</label>
+              <div class="err">Digits only (up to 12) — or tick "pending" and give the application reference</div></div>
             <div class="f"><label for="fundingAccount">CRDB funding account to debit <span class="req">*</span></label>
               <input id="fundingAccount" inputmode="numeric" autocomplete="off">
               <div class="err">10–16 digits</div></div>
+            <div class="f"><label for="instructionRef">Client instruction ref. <span class="req">*</span></label>
+              <input id="instructionRef" autocomplete="off" placeholder="order form no. / call ref / e-mail date">
+              <div class="hint">How the client authorised this bid — required for the register.</div>
+              <div class="err">Required (2–60 characters)</div></div>
             <div class="f"><label for="clientPhone">Client phone</label>
               <input id="clientPhone" type="tel" inputmode="tel" placeholder="7XXXXXXXX or +…">
               <div class="err">9 digits starting 6/7, or full international with +</div></div>
@@ -187,6 +192,7 @@
         <div class="card">
           <div class="f"><label for="remarks">Remarks (optional)</label><input id="remarks" autocomplete="off"></div>
           <div class="note warn" id="closed-note" style="display:none"><b>Bidding is closed for this auction.</b> Contact the admin if a late bid must be recorded.</div>
+          <div class="note bad" id="submit-err" style="display:none"></div>
           <div style="display:flex; justify-content:flex-end; margin-top:14px">
             <button type="button" class="btn primary" id="btn-review">Review &amp; submit bid</button>
           </div>
@@ -235,6 +241,7 @@ const DEMO_AUCTION = {
   coupon: "11.25%", isin: "TZ1996106112", auctionDate: "2026-09-02",
   settlementDate: "2026-09-04", maturityPeriod: "10 years",
   minBid: 1000000, multiple: 100000, priceMin: 80, priceMax: 130,
+  tenors: [], maxNonComp: 0,
   cutoff: "2099-01-01 10:00", notes: "Demo data — connect the backend to go live", open: true,
 };
 
@@ -242,6 +249,7 @@ const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmtTZS = n => Number(n).toLocaleString("en-US");
+const fmtTZS2 = n => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const state = { auction: null, token: null, staff: null, lastPayload: null };
 
@@ -314,14 +322,22 @@ async function loadAuction(){
       <div class="cutoff" id="cutoff"></div>
       ${a.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(a.notes)}</div>` : ""}`;
     tickCutoff(); if(state._t) clearInterval(state._t); state._t = setInterval(tickCutoff, 30000);
-    // pick up admin changes (extension, early close, next auction) without a reload
-    if(!state._r) state._r = setInterval(() => {
-      if($("#v-portal").classList.contains("active") && !document.hidden) loadAuction();
-    }, 120000);
+    syncTenorSelects();
   }catch(e){
-    state.auction = null; $("#btn-review").disabled = true;
+    if(state.auction){ announce("Connection blip while refreshing the auction — keeping current details."); return; }
+    $("#btn-review").disabled = true;
     card.innerHTML = `<div class="note bad" style="margin:0"><b>Could not load the auction.</b> ${esc(e.message)} — <button type="button" class="btn small" onclick="loadAuction()">Retry</button></div>`;
   }
+}
+function syncTenorSelects(){
+  const tenors = (state.auction && state.auction.tenors) || [];
+  $$("#lines .line").forEach(d => {
+    const wrap = $("[data-tenor]", d), sel = $("select[data-k=tenor]", d);
+    wrap.style.display = tenors.length ? "" : "none";
+    const cur = sel.value;
+    sel.innerHTML = tenors.map(t => `<option>${esc(t)}</option>`).join("");
+    if(tenors.indexOf(cur) >= 0) sel.value = cur;
+  });
 }
 function auctionOpen(){
   const a = state.auction; if(!a) return false;
@@ -342,11 +358,15 @@ function tickCutoff(){
 }
 
 /* ════════ bid lines ════════ */
+let lineSeq = 0;
 function lineBlock(i){
   const d = document.createElement("div");
   d.className = "line";
+  const tenors = (state.auction && state.auction.tenors) || [];
   d.innerHTML = `
     <div class="n">${i + 1}</div>
+    <div class="f" data-tenor style="${tenors.length ? "" : "display:none"}"><label>Tenor <span class="req">*</span></label>
+      <select data-k="tenor">${tenors.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
     <div class="f"><label>Bid type <span class="req">*</span></label>
       <select data-k="type"><option>Competitive</option><option>Non-competitive</option></select></div>
     <div class="f"><label>Face value (TZS) <span class="req">*</span></label>
@@ -356,7 +376,8 @@ function lineBlock(i){
       <input data-k="price" inputmode="decimal" autocomplete="off" placeholder="e.g. 103.4215">
       <div class="err"></div></div>
     <div class="del">${i > 0 ? '<button type="button" title="Remove line">×</button>' : ""}</div>`;
-  $$("label", d).forEach((lab, j) => { const inp = $$("input,select", d)[j]; inp.id = "ln" + i + "k" + j; lab.htmlFor = inp.id; });
+  const seq = ++lineSeq;
+  $$("label", d).forEach((lab, j) => { const inp = $$("input,select", d)[j]; if(!inp) return; inp.id = "ln" + seq + "k" + j; lab.htmlFor = inp.id; });
   $("select[data-k=type]", d).addEventListener("change", e => {
     const nc = e.target.value === "Non-competitive";
     const price = $("input[data-k=price]", d);
@@ -387,17 +408,21 @@ $("#btn-addline").addEventListener("click", () => {
 function readLines(){
   return $$("#lines .line").map(d => ({
     type: $("select[data-k=type]", d).value,
+    tenor: $("select[data-k=tenor]", d).value,
     amount: $("input[data-k=amount]", d).value.replace(/\D/g, ""),
     price: $("input[data-k=price]", d).value.trim(),
   }));
 }
 function validate(){
   const a = state.auction; let ok = true;
+  if(!a) return false;
   const need = (inp, good, msg) => { const f = inp.closest(".f");
     if(msg) { const e = $(".err", f); if(e && msg !== true) e.textContent = msg; }
     ok = setInvalid(inp, !good) && ok; };
   need($("#clientName"), $("#clientName").value.trim().length > 1);
-  need($("#clientCDS"), /^\d{1,12}$/.test($("#clientCDS").value.trim()));
+  const cdsVal = $("#clientCDS").value.trim();
+  need($("#clientCDS"), $("#cdsPending").checked ? /^[\w-]{4,40}$/.test(cdsVal) : /^\d{1,12}$/.test(cdsVal));
+  need($("#instructionRef"), (v => v.length >= 2 && v.length <= 60)($("#instructionRef").value.trim()));
   need($("#fundingAccount"), /^\d{10,16}$/.test($("#fundingAccount").value.trim()));
   const ph = $("#clientPhone").value.replace(/\s/g, "");
   need($("#clientPhone"), !ph || /^[67]\d{8}$/.test(ph) || /^\+[1-9]\d{7,14}$/.test(ph));
@@ -414,14 +439,32 @@ function validate(){
       need(prIn, prOK, "Between " + a.priceMin + " and " + a.priceMax + ", max 4 decimals");
     } else setInvalid(prIn, false);
   });
+  if(ok && a.maxNonComp > 0){
+    const nc = readLines().filter(L => L.type === "Non-competitive")
+      .reduce((s, L) => s + Number(L.amount || 0), 0);
+    if(nc > a.maxNonComp){
+      ok = false;
+      showSubmitErr("Non-competitive total TZS " + fmtTZS(nc) + " exceeds this auction's cap of TZS " + fmtTZS(a.maxNonComp) + ".");
+    }
+  }
   return ok;
+}
+function showSubmitErr(msg){
+  const el = $("#submit-err"); el.style.display = "block";
+  el.innerHTML = "<b>Not recorded:</b> " + esc(msg);
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+function newSubmitId(){
+  try{ return crypto.randomUUID().replace(/-/g, ""); }
+  catch(e){ return "s" + Date.now() + Math.random().toString(36).slice(2, 10); }
 }
 function buildPayload(){
   return {
     action: "bid", token: state.token, staffId: state.staff.staffId,
-    auctionNo: state.auction.auctionNo,
+    auctionNo: state.auction.auctionNo, submitId: newSubmitId(),
     clientName: $("#clientName").value.trim(),
-    clientCDS: $("#clientCDS").value.trim(),
+    clientCDS: ($("#cdsPending").checked ? "PENDING:" : "") + $("#clientCDS").value.trim(),
+    instructionRef: $("#instructionRef").value.trim(),
     fundingAccount: $("#fundingAccount").value.trim(),
     clientPhone: $("#clientPhone").value.replace(/\s/g, ""),
     remarks: $("#remarks").value.trim(),
@@ -431,16 +474,24 @@ function buildPayload(){
 
 /* ════════ review + submit ════════ */
 $("#btn-review").addEventListener("click", () => {
+  $("#submit-err").style.display = "none";
   if(!auctionOpen()){ tickCutoff(); return; }
   if(!validate()){ focusFirstInvalid(); return; }
   const p = buildPayload(); state.lastPayload = p;
+  const hasTenors = (state.auction.tenors || []).length > 0;
+  const consider = L => L.type === "Competitive" ? Math.round(Number(L.amount) * Number(L.price)) / 100 : 0;
+  const totalPayable = p.lines.reduce((s, L) => s + consider(L), 0);
   const rows = [
     ["Auction", esc(p.auctionNo) + " · " + esc(state.auction.security)],
     ["Client", esc(p.clientName)],
     ["CDS account", esc(p.clientCDS)],
     ["Funding account", esc(p.fundingAccount)],
-    ...p.lines.map((L, i) => ["Line " + (i + 1),
-      "TZS " + fmtTZS(L.amount) + (L.type === "Competitive" ? " @ " + esc(L.price) : " · Non-competitive")]),
+    ["Instruction ref.", esc(p.instructionRef)],
+    ...p.lines.map((L, i) => ["Line " + (i + 1) + (hasTenors ? " · " + esc(L.tenor) + "d" : ""),
+      "TZS " + fmtTZS(L.amount) + (L.type === "Competitive"
+        ? " @ " + esc(L.price) + " ≈ TZS " + fmtTZS2(consider(L))
+        : " · Non-competitive")]),
+    ...(totalPayable ? [["Payable (approx.)", "TZS " + fmtTZS2(totalPayable)]] : []),
     ["Entered by", esc(state.staff.name) + " (" + esc(state.staff.staffId) + ")"],
   ];
   $("#rv").innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("");
@@ -449,25 +500,35 @@ $("#btn-review").addEventListener("click", () => {
 $("#dlg-back").addEventListener("click", () => $("#dlg").close());
 $("#dlg-submit").addEventListener("click", async () => {
   const btn = $("#dlg-submit"); btn.disabled = true; btn.textContent = "Submitting…";
+  let result = null;
   try{
-    const j = await api(state.lastPayload);
-    if(!j.ok) throw new Error(j.error || "rejected");
+    result = await api(state.lastPayload);
+  }catch(e){ result = { ok: false, error: "Network problem — " + e.message + ". The bid was NOT confirmed; try Submit again (a duplicate cannot occur)." }; }
+  btn.disabled = false; btn.textContent = "Submit bid";
+  if(!result.ok){
     $("#dlg").close();
-    $("#done-ref").textContent = j.ref;
-    $("#done-sum").textContent = state.lastPayload.lines.length + " bid line(s) recorded for " +
-      state.lastPayload.clientName + " · auction " + state.auction.auctionNo +
-      (j.at ? " · received " + j.at + " EAT" : "") + ".";
-    show("v-done");
-  }catch(e){
-    $("#dlg").close();
-    if(/log in again|expired/i.test(e.message)){ logout(); $("#login-err").style.display = "block"; $("#login-err").innerHTML = "<b>Session expired.</b> Sign in and re-enter the bid — nothing was saved."; }
-    else { const n = $("#closed-note"); n.style.display = "block"; n.className = "note bad";
-      n.innerHTML = "<b>Not recorded:</b> " + esc(e.message) + " — nothing was saved; fix and try again."; }
-    announce("Bid not recorded: " + e.message);
-  }finally{ btn.disabled = false; btn.textContent = "Submit bid"; }
+    if(/log in again|expired/i.test(result.error || "")){
+      logout(); $("#login-err").style.display = "block";
+      $("#login-err").innerHTML = "<b>Session expired.</b> Sign in and re-enter the bid — nothing was saved.";
+    } else {
+      showSubmitErr(result.error || "rejected");
+      if(result.auctionChanged) loadAuction();
+    }
+    announce("Bid not recorded: " + (result.error || ""));
+    return;
+  }
+  // success — rendering can no longer be mistaken for a failed submission
+  $("#dlg").close();
+  const p = state.lastPayload;
+  $("#done-ref").textContent = result.ref || "";
+  $("#done-sum").textContent = p.lines.length + " bid line(s) recorded for " + p.clientName +
+    " · auction " + p.auctionNo + (result.at ? " · received " + result.at + " EAT" : "") + ".";
+  show("v-done");
 });
 $("#btn-another").addEventListener("click", () => {
-  ["clientName","clientCDS","fundingAccount","clientPhone","remarks"].forEach(id => $("#" + id).value = "");
+  ["clientName","clientCDS","fundingAccount","clientPhone","remarks","instructionRef"].forEach(id => $("#" + id).value = "");
+  $("#cdsPending").checked = false;
+  $("#submit-err").style.display = "none";
   $("#lines").textContent = ""; $("#lines").append(lineBlock(0)); renumber();
   const n = $("#closed-note"); n.className = "note warn"; n.style.display = "none";
   show("v-portal"); loadAuction();
@@ -498,6 +559,9 @@ function enterPortal(){
   $("#staff-branch").textContent = state.staff.branch;
   $("#staffbar").style.display = "flex";
   if(!$$("#lines .line").length){ $("#lines").append(lineBlock(0)); renumber(); }
+  if(!state._r) state._r = setInterval(() => {
+    if($("#v-portal").classList.contains("active") && !document.hidden && !$("#dlg").open) loadAuction();
+  }, 120000);
   show("v-portal"); loadAuction();
 }
 function logout(){
