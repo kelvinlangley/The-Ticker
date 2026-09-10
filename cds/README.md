@@ -142,10 +142,16 @@ A companion **staff-only portal** for entering client bids in BOT auctions
 (modeled on **CDS/FORM/03**: up to 4 bid lines, face value + price per 100 at
 4 decimals). One Google Sheet drives it, via `backend/bids-apps-script.gs`:
 
-- **Staff tab** — Email / Name / Branch / StaffNumber / Active. Staff sign in
-  with their `@crdbbank.co.tz` e-mail plus their staff number (digits, ≤5).
-  Login is verified *server-side* and issues a same-day token; bids without a
-  valid token are rejected by the server, so only listed staff can submit.
+- **Staff tab** — Email / Name / Branch / StaffNumber / Active / Admin /
+  AdminPin. Staff sign in with their `@crdbbank.co.tz` e-mail plus their
+  staff number (digits, ≤5). Login is verified *server-side* and issues a
+  same-day token; bids without a valid token are rejected by the server, so
+  only listed staff can submit. `Admin = YES` additionally unlocks the admin
+  portal — and **give every admin a long `AdminPin`**: the admin portal then
+  demands it at sign-in, so a guessable staff number alone can never open
+  the client register. `setup()` seeds one **inactive** sample row as a
+  template (its details are public in this repo — replace it with real staff
+  and leave it `Active = NO` or delete it).
 - **Auctions tab** — one row per auction (number, security, coupon, ISIN,
   dates, min bid, multiple, price band). The `Active` column is the admin
   switch: `YES` = open, `CLOSED` = staff see a thank-you note that the
@@ -165,12 +171,36 @@ feedback as staff move between fields: securities account strictly
 multiples, price inside the band with ≤4 decimals, account to debit 10–13
 digits, client e-mail required, deadline respected.
 
+### Admin portal (`../bids/admin.html`)
+
+A companion **admin-only portal** on the same backend (same `/exec` URL in
+its `CONFIG.API_URL`). Sign-in is the same staff e-mail + staff number, but
+the server additionally requires `Admin = YES` on the Staff tab — ordinary
+staff are refused — and, when the row has an `AdminPin`, that PIN as well
+(the field appears automatically). Admin sessions use a separate token
+scope, so a staff-portal session can never call admin endpoints. Two tabs:
+
+- **Bid Reports** — pick any auction; totals at a glance (bids, total face
+  value, clean vs WAP split, consideration) above the full register, one row
+  per bid with its timestamp. **Download Excel** produces a real `.xlsx`
+  (generated in the browser, no libraries); **Download PDF** opens a
+  print-styled report (headed, totalled, with sign-off lines) — choose
+  "Save as PDF". Auto-refreshes every 2 minutes while open.
+- **Auction Setup** — list of all auction rows with status badges and
+  one-click **Open / Close now / Hide**, plus a full editor for creating the
+  next auction or amending one (dates, minimum, multiples, price band,
+  tenors, WAP cap, deadline override for grace periods, notes). Saves write
+  to the Auctions tab, so the staff portal reflects changes within
+  ~2 minutes; the Sheet remains the master record and can still be edited
+  directly.
+
 Setup mirrors the account form: blank Sheet → paste the script → set
 `SHEET_ID` and a random `TOKEN_SECRET` → Run `setup()` once → deploy as Web
 App (Execute as Me / access: Anyone) → put the `/exec` URL in
-`bids/index.html` `CONFIG.API_URL`. With no URL configured the portal runs in
-demo mode (any `@crdbbank.co.tz` e-mail + any ≤5-digit staff number signs
-in, nothing is sent; append `?closed=1` to preview the closed-auction note).
+`bids/index.html` **and** `bids/admin.html` `CONFIG.API_URL`. With no URL
+configured both pages run in demo mode (any `@crdbbank.co.tz` e-mail + any
+≤5-digit staff number signs in, nothing is sent; on the staff portal append
+`?closed=1` to preview the closed-auction note).
 
 ## Files
 
