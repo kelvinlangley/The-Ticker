@@ -195,25 +195,33 @@
 
           <div class="f"><label for="accountToDebit">7. Account to Debit <span class="req">*</span></label>
             <input id="accountToDebit" inputmode="numeric" autocomplete="off">
-            <div class="err">10–16 digits</div></div>
+            <div class="hint">10–13 digits</div>
+            <div class="err">Must be 10–13 digits</div></div>
 
-          <div class="f"><label for="branch">8. Branch <span class="req">*</span></label>
+          <div class="f"><label for="branch">8. Branch Name <span class="req">*</span></label>
             <input id="branch" autocomplete="off"><div class="err">Required</div></div>
 
           <div class="f"><label for="responsible">9. Responsible Person <span class="req">*</span></label>
             <input id="responsible" autocomplete="off"><div class="err">Required</div></div>
 
-          <div class="f"><label for="clientEmail">Client e-mail <span class="hint" style="display:inline">(for sharing auction results — leave blank if none)</span></label>
+          <div class="f"><label for="clientEmail">10. Client E-mail <span class="req">*</span></label>
             <input id="clientEmail" type="email" autocomplete="off">
-            <div class="err">Not a valid e-mail address</div></div>
-
-          <div class="note warn" id="closed-note" style="display:none"><b>The submission deadline has passed.</b> Contact the admin if a late bid must be recorded.</div>
-          <div class="note bad" id="submit-err" style="display:none"></div>
+            <div class="err">Enter a valid e-mail address</div></div>
           <div style="display:flex; justify-content:flex-end; margin-top:6px">
             <button type="button" class="btn primary" id="btn-review">Review &amp; submit bid</button>
           </div>
         </div>
       </form>
+
+      <!-- outside the form so a rejection stays visible even when the form
+           is hidden because the auction closed mid-submission -->
+      <div class="note bad" id="submit-err" style="display:none"></div>
+
+      <div class="card done" id="closed-card" style="display:none">
+        <div class="big">🙏</div>
+        <h2 style="margin:6px 0">Thank you — this auction is closed</h2>
+        <p style="color:var(--ink2)" id="closed-msg"></p>
+      </div>
     </section>
 
     <!-- ── DONE ── -->
@@ -255,13 +263,17 @@ const CONFIG = {
 const DEMO = !CONFIG.API_URL;
 const STAFF_DOMAIN = "crdbbank.co.tz";
 const DEMO_AUCTION = {
+  // Live rule: settlement = day after the auction; submission deadline =
+  // 5:00 PM EAT the day before the auction (admin can override for grace).
   auctionNo: "711 (Re-open)", security: "11.25% 10yrs T-Bond",
-  coupon: "11.25%", isin: "TZ1996106112", auctionDate: "2026-09-02",
-  settlementDate: "2026-09-04", maturityPeriod: "10 years", tenors: [],
+  coupon: "11.25%", isin: "TZ1996106112", auctionDate: "2099-09-02",
+  settlementDate: "2099-09-03", maturityPeriod: "10 years", tenors: [],
   minBid: 1000000, multiple: 100000, priceMin: 80, priceMax: 130, maxWap: 0,
-  deadline: "2/09/2099 09:00 AM", cutoff: "2099-09-02 09:00",
+  deadline: "1/09/2099 05:00 PM", cutoff: "2099-09-01 17:00",
   notes: "Demo data — connect the backend to go live", open: true,
 };
+// Preview of the closed-auction thanks note: open the page as …?closed=1
+if (DEMO && /[?&]closed\b/.test(location.search)) DEMO_AUCTION.open = false;
 
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
@@ -322,8 +334,10 @@ async function loadAuction(){
       if(!j.ok){
         if(j.noAuction){
           state.auction = null;
-          card.innerHTML = '<div class="note warn" style="margin:0"><b>No auction is open for bidding right now.</b> The portal opens when the admin activates the next auction after the BOT call for tender. <button type="button" class="btn small" onclick="loadAuction()">Check again</button></div>';
+          card.innerHTML = '<div class="note warn" style="margin:0"><b>Thank you for your interest — no auction is open for bidding right now.</b> Please consider participating in the next auction: the portal opens when the next BOT call for tender is issued. <button type="button" class="btn small" onclick="loadAuction()">Check again</button></div>';
           $("#btn-review").disabled = true;
+          $("#bidform").style.display = "none";
+          $("#closed-card").style.display = "none";
           return;
         }
         throw new Error(j.error || "no auction");
@@ -367,10 +381,17 @@ function auctionOpen(){
 }
 function tickCutoff(){
   const el = $("#cutoff"); if(!el || !state.auction) return;
-  const open = auctionOpen();
+  if($("#dlg").open) return; // don't flip the page under an open confirm dialog
+  const a = state.auction, open = auctionOpen();
   el.className = "cutoff " + (open ? "open" : "closed");
-  el.textContent = open ? "Submissions OPEN" : "Submissions CLOSED — deadline passed";
-  $("#closed-note").style.display = open ? "none" : "block";
+  el.textContent = open ? "Submissions OPEN" : "Submissions CLOSED";
+  $("#bidform").style.display = open ? "" : "none";
+  $("#closed-card").style.display = open ? "none" : "block";
+  if(!open){
+    $("#closed-msg").innerHTML = "The submission deadline for <b>AUCTION " + esc(a.auctionNo) +
+      " — " + esc(a.security) + "</b>" + (a.deadline ? " passed on <b>" + esc(a.deadline) + "</b> (EAT)" : " has passed") +
+      ". Please consider participating in the next auction — the portal reopens when the next BOT call for tender is issued.";
+  }
   $("#btn-review").disabled = !open;
 }
 
@@ -414,11 +435,10 @@ function validate(){
     $("#clean-err").textContent = "Between " + a.priceMin + " and " + a.priceMax + ", max 4 decimals";
     need($("#cleanPrice"), priceOK);
   }
-  need($("#accountToDebit"), /^\d{10,16}$/.test($("#accountToDebit").value.trim()));
+  need($("#accountToDebit"), /^\d{10,13}$/.test($("#accountToDebit").value.trim()));
   need($("#branch"), !!$("#branch").value.trim());
   need($("#responsible"), !!$("#responsible").value.trim());
-  const ce = $("#clientEmail").value.trim();
-  need($("#clientEmail"), !ce || emailOk(ce));
+  need($("#clientEmail"), emailOk($("#clientEmail").value.trim()));
   return ok;
 }
 function newSubmitId(){
@@ -466,15 +486,15 @@ $("#btn-review").addEventListener("click", () => {
     ["Price", esc(p.priceType) + (clean ? " @ " + esc(p.cleanPrice) : "")],
     ...(clean ? [["Consideration (approx.)", "TZS " + fmtTZS2(consider)]] : []),
     ["Account to debit", esc(p.accountToDebit)],
-    ["Branch", esc(p.branch)],
+    ["Branch name", esc(p.branch)],
     ["Responsible person", esc(p.responsible)],
-    ["Client e-mail", esc(p.clientEmail) || "—"],
+    ["Client e-mail", esc(p.clientEmail)],
     ["Entered by", esc(state.staff.name) + " · " + esc(state.staff.email)],
   ];
   $("#rv").innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("");
   $("#dlg").showModal();
 });
-$("#dlg-back").addEventListener("click", () => $("#dlg").close());
+$("#dlg-back").addEventListener("click", () => { $("#dlg").close(); tickCutoff(); });
 $("#dlg-submit").addEventListener("click", async () => {
   const btn = $("#dlg-submit"); btn.disabled = true; btn.textContent = "Submitting…";
   let result = null;
@@ -488,6 +508,7 @@ $("#dlg-submit").addEventListener("click", async () => {
       logout(); $("#login-err").style.display = "block";
       $("#login-err").innerHTML = "<b>Session expired.</b> Sign in and re-enter the bid — nothing was saved.";
     } else {
+      tickCutoff(); // catch up if the auction closed while the dialog was open
       showSubmitErr(result.error || "rejected");
       if(result.auctionChanged) loadAuction();
     }
@@ -503,10 +524,9 @@ $("#dlg-submit").addEventListener("click", async () => {
   show("v-done");
 });
 $("#btn-another").addEventListener("click", () => {
-  ["investorNames","securitiesAccount","faceValue","cleanPrice","accountToDebit","clientEmail"].forEach(id => $("#" + id).value = "");
+  ["investorNames","securitiesAccount","faceValue","cleanPrice","accountToDebit","branch","clientEmail"].forEach(id => $("#" + id).value = "");
   $$("#nature-radios input, #price-radios input").forEach(r => { r.checked = false; r.closest("label").classList.remove("sel"); });
   syncCleanPrice();
-  $("#branch").value = state.staff.branch || "";
   $("#responsible").value = state.staff.name || "";
   $("#submit-err").style.display = "none";
   show("v-portal"); loadAuction();
@@ -538,7 +558,6 @@ function enterPortal(){
   $("#staff-name").textContent = state.staff.name;
   $("#staff-email").textContent = state.staff.email;
   $("#staffbar").style.display = "flex";
-  if(!$("#branch").value) $("#branch").value = state.staff.branch || "";
   if(!$("#responsible").value) $("#responsible").value = state.staff.name || "";
   if(!state._r) state._r = setInterval(() => {
     if($("#v-portal").classList.contains("active") && !document.hidden && !$("#dlg").open) loadAuction();
@@ -566,7 +585,19 @@ $("#btn-logout").addEventListener("click", logout);
   $("#cleanPrice").addEventListener("input", e => {
     e.target.value = e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
   });
-  $("#accountToDebit").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 16); });
+  $("#accountToDebit").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 13); });
+  // instant feedback: flag a badly-entered field the moment the person leaves
+  // it (and clear the flag as soon as they fix it), before they reach the next
+  // question — requested for Q3, same courtesy for the account to debit
+  const live = (inp, bad) => {
+    const run = onBlur => { const v = inp.value.trim();
+      if(v) setInvalid(inp, bad(v));
+      else if(!onBlur) setInvalid(inp, false); };
+    inp.addEventListener("blur", () => run(true));
+    inp.addEventListener("input", () => { if(inp.closest(".f").classList.contains("invalid")) run(false); });
+  };
+  live($("#securitiesAccount"), v => !/^(BOTCDSB026|BOTCDSCORU)\d{4,8}$/.test(v.toUpperCase()));
+  live($("#accountToDebit"), v => !/^\d{10,13}$/.test(v));
   if(DEMO){
     $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with your @' + STAFF_DOMAIN + ' e-mail and staff number to preview; submitted bids go nowhere. Once the live backend is connected, only staff on the admin staff list can sign in. The admin connects the live backend in CONFIG.API_URL.</div>';
   }

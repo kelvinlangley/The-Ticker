@@ -5,11 +5,19 @@
 // editor - it creates three tabs):
 //   Auctions - one row per auction. The Active column is the admin's switch:
 //                YES    = shown in the portal and OPEN for bidding
-//                         (closes automatically at BidCutoff)
-//                CLOSED = still shown, but bidding is stopped
+//                         (closes automatically at the deadline)
+//                CLOSED = still shown, but staff see a thank-you note that the
+//                         auction is closed (consider the next auction)
 //                NO / blank = row ignored
-//              Extend or grace period = edit BidCutoff (checked live on every
-//              submission). Next auction = add a row and type YES.
+//              Leave SettlementDate BLANK = auto: the day after AuctionDate.
+//              Leave BidCutoff BLANK = auto deadline: 5:00 PM EAT the day
+//              BEFORE AuctionDate. Grace period / extension = type an explicit
+//              date-time in BidCutoff (e.g. 2026-09-02 11:00) - it overrides
+//              the automatic deadline and is checked live on every submission.
+//              AuctionDate must be a real date (yyyy-MM-dd or a date cell);
+//              if it is not and BidCutoff is blank, bidding is HELD CLOSED
+//              (an auction must never stay open with no deadline).
+//              Next auction = add a row and type YES.
 //              Title shown to staff = "AUCTION <AuctionNo> - <Security>".
 //              Tenors: leave blank for a bond; for a T-bill auction list the
 //              offered tenors e.g. "35,91,182,364". MaxWapTZS caps one
@@ -69,9 +77,13 @@ function setup() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const auctions = ss.getSheetByName('Auctions');
   if (auctions.getLastRow() === 1) {
+    // sample auction two weeks out; SettlementDate and BidCutoff left blank on
+    // purpose so the automatic rules apply (settlement = day after the
+    // auction, deadline = 5:00 PM EAT the day before)
+    const sampleDate = Utilities.formatDate(new Date(Date.now() + 14 * 864e5), TZ, 'yyyy-MM-dd');
     auctions.appendRow(['YES', '711 (Re-open)', '11.25% 10yrs T-Bond', '11.25%',
-      'TZ1996106112', '2026-09-02', '2026-09-04', '10 years', '', 1000000, 100000,
-      80, 130, 0, '2026-09-02 09:00', 'Sample auction - edit or replace this row']);
+      'TZ1996106112', sampleDate, '', '10 years', '', 1000000, 100000,
+      80, 130, 0, '', 'Sample auction - edit or replace this row']);
   }
   const staff = ss.getSheetByName('Staff');
   if (staff.getLastRow() === 1) {
@@ -110,6 +122,13 @@ function parseCutoff(v) {
   return new Date(m[1] + 'T' + m[2] + (m[3] || ':00') + '+03:00'); // EAT
 }
 
+// 'yyyy-MM-dd' shifted by whole days (anchored at UTC noon, so no rollover).
+function dayShift(ymd, days) {
+  const t = new Date(ymd + 'T12:00:00Z');
+  t.setUTCDate(t.getUTCDate() + days);
+  return t.toISOString().slice(0, 10);
+}
+
 function activeAuction() {
   const rows = sheetRows('Auctions', AUCTION_COLS)
     .filter(r => ['YES', 'CLOSED'].indexOf(String(r.Active).trim().toUpperCase()) >= 0);
@@ -117,11 +136,19 @@ function activeAuction() {
   const a = rows[rows.length - 1]; // if several are marked, the newest row wins
   const statusOpen = String(a.Active).trim().toUpperCase() === 'YES';
   const fmt = v => (v instanceof Date) ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd') : String(v || '');
-  const cutoff = parseCutoff(a.BidCutoff);
+  const auctionYmd = fmt(a.AuctionDate);
+  const derivable = /^\d{4}-\d{2}-\d{2}$/.test(auctionYmd);
+  // blank SettlementDate -> the day after the auction;
+  // blank BidCutoff -> 5:00 PM EAT the day before the auction (an explicit
+  // BidCutoff value always wins, e.g. for a grace period)
+  let settlement = fmt(a.SettlementDate);
+  if (!settlement && derivable) settlement = dayShift(auctionYmd, 1);
+  let cutoff = parseCutoff(a.BidCutoff);
+  if (!cutoff && derivable) cutoff = new Date(dayShift(auctionYmd, -1) + 'T17:00:00+03:00');
   const tenors = String(a.Tenors || '').split(',').map(t => t.trim()).filter(Boolean);
   const cfg = {
     auctionNo: String(a.AuctionNo), security: String(a.Security), coupon: String(a.Coupon),
-    isin: String(a.ISIN), auctionDate: fmt(a.AuctionDate), settlementDate: fmt(a.SettlementDate),
+    isin: String(a.ISIN), auctionDate: auctionYmd, settlementDate: settlement,
     maturityPeriod: String(a.MaturityPeriod), tenors: tenors,
     minBid: Number(a.MinBidTZS) || 0, multiple: Number(a.MultipleTZS) || 0,
     priceMin: Number(a.PriceMin) || 0, priceMax: Number(a.PriceMax) || 0,
@@ -136,7 +163,11 @@ function activeAuction() {
   const complete = cfg.minBid > 0 && cfg.multiple > 0 && cfg.priceMax > cfg.priceMin && cfg.priceMin > 0;
   if (!complete) cfg.notes = (cfg.notes ? cfg.notes + ' · ' : '') +
     'Auction row incomplete (min/multiple/price band) - bidding held closed';
-  cfg.open = statusOpen && complete && (!cutoff || new Date() < cutoff);
+  // no deadline at all (blank BidCutoff and an AuctionDate the automatic rule
+  // cannot read) also fails CLOSED - an auction must never stay open forever
+  if (!cutoff) cfg.notes = (cfg.notes ? cfg.notes + ' · ' : '') +
+    'No deadline set (AuctionDate must be yyyy-MM-dd, or fill BidCutoff) - bidding held closed';
+  cfg.open = statusOpen && complete && !!cutoff && new Date() < cutoff;
   return cfg;
 }
 
@@ -248,12 +279,12 @@ function handleBid(p) {
     if (pr < a.priceMin || pr > a.priceMax)
       return json({ ok: false, error: 'Clean price must be between ' + a.priceMin + ' and ' + a.priceMax });
   }
-  if (!/^\d{10,16}$/.test(String(p.accountToDebit || ''))) return json({ ok: false, error: 'Account to debit must be 10-16 digits' });
-  if (!String(p.branch || '').trim()) return json({ ok: false, error: 'Branch missing' });
+  if (!/^\d{10,13}$/.test(String(p.accountToDebit || ''))) return json({ ok: false, error: 'Account to debit must be 10-13 digits' });
+  if (!String(p.branch || '').trim()) return json({ ok: false, error: 'Branch name missing' });
   if (!String(p.responsible || '').trim()) return json({ ok: false, error: 'Responsible person missing' });
   const clientEmail = String(p.clientEmail || '').trim();
-  if (clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clientEmail))
-    return json({ ok: false, error: 'Client e-mail is not a valid address' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clientEmail))
+    return json({ ok: false, error: 'Client e-mail is required (a valid address)' });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
