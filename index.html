@@ -248,33 +248,33 @@
    Every value must come from a Bank of Tanzania (or NBS) publication.
    ════════════════════════════════════════════════════════════════════ */
 const DATA = { /* INJECT-DATA */
-  asOf: "2026-09-02",
-  updateLine: "Auto-refreshed from BOT releases · last built 2 Sep 2026",
+  asOf: "2026-09-10",
+  updateLine: "Auto-refreshed from BOT releases · last built 10 Sep 2026",
   tape: [
     {label:"CBR", value:"6.25%", dir:"up"},
     {label:"REDISCOUNT", value:"8.75%", dir:"up"},
-    {label:"INFLATION JUL", value:"4.2%", dir:"up"},
+    {label:"INFLATION AUG", value:"4.3%", dir:"up"},
     {label:"GDP 2025", value:"5.9%", dir:"up"},
-    {label:"364-DAY BILL", value:"6.649%", dir:"dn"},
-    {label:"182-DAY BILL", value:"5.055%", dir:"dn"},
+    {label:"364-DAY BILL", value:"6.474%", dir:"dn"},
+    {label:"182-DAY BILL", value:"4.925%", dir:"dn"},
     {label:"2Y BOND", value:"8.403%", dir:"up"},
     {label:"5Y BOND", value:"9.539%", dir:"dn"},
     {label:"10Y BOND", value:"10.692%", dir:"dn"},
     {label:"15Y BOND", value:"10.552%", dir:"up"},
     {label:"20Y BOND", value:"11.331%", dir:"up"},
     {label:"25Y BOND", value:"11.480%", dir:"dn"},
-    {label:"TZS/USD", value:"2,653.00", dir:"dn"},
+    {label:"TZS/USD", value:"2,651.91", dir:"dn"},
     {label:"IBCM 7-DAY", value:"6.41%", dir:"up"}
   ],
   sources: [
     {name:"BOT homepage — live indicators", url:"https://www.bot.go.tz/"},
     {name:"MPC statement, July 2026 (No. 244)", url:"https://www.bot.go.tz/Adverts/PressRelease/en/2026070313025546.pdf"},
-    {name:"Monthly Economic Review, July 2026", url:"https://www.bot.go.tz/Publications/Regular/Monthly%20Economic%20Review/en/2026081709131797.pdf"},
+    {name:"Monthly Economic Review, August 2026", url:"https://www.bot.go.tz/Publications/Regular/Monthly%20Economic%20Review/en/2026090916364778.pdf"},
     {name:"Treasury bill auction results", url:"https://www.bot.go.tz/TBills"},
     {name:"Treasury bond auction results", url:"https://www.bot.go.tz/TBonds"},
     {name:"Issuance calendar, Q1 FY2026/27", url:"https://www.bot.go.tz/Adverts/PressRelease/en/ISSUANCE_CALENDER_English_Version.pdf"},
     {name:"MPC meetings calendar 2026/27", url:"https://www.bot.go.tz/webdocs/Other/MPC_Calendar.pdf"},
-    {name:"NBS CPI release, July 2026", url:"https://www.nbs.go.tz/uploads/statistics/documents/en-1786367529-CPI%20%20Release_072026_English.pdf"},
+    {name:"NBS CPI release, August 2026", url:"https://www.nbs.go.tz/uploads/statistics/documents/en-1788862063-CPI%20%20Release_082026_English.pdf"},
     {name:"NBS GDP highlights, Q1 2026", url:"https://www.nbs.go.tz/uploads/statistics/documents/en-1787377904-Highlights%20on%20the%20First%20Quarter%20GDP%202026%20FS.pdf"}
   ],
   cbrHistory: [
@@ -298,7 +298,8 @@ const DATA = { /* INJECT-DATA */
     {t:"2025-11",v:3.4},{t:"2025-12",v:3.6},{t:"2026-01",v:3.3},{t:"2026-02",v:3.2},
     {t:"2026-03",v:3.2},{t:"2026-04",v:4.0,note:"Step up as fuel and transport costs fed through"},
     {t:"2026-05",v:4.2},{t:"2026-06",v:4.0,note:"Government fuel subsidy in May–June softened the climb"},
-    {t:"2026-07",v:4.2,note:"Latest reading; core 3.9%, food 4.1%"}
+    {t:"2026-07",v:4.2,note:"Core 3.9%, food 4.1%"},
+    {t:"2026-08",v:4.3,note:"Latest reading; core 4.1%, food 3.7%"}
   ],
   gdpAnnual: [
     {t:"2019-12-31",v:6.9,note:"Pre-pandemic pace (older 2015-base series)"},
@@ -410,7 +411,8 @@ const DATA = { /* INJECT-DATA */
     {t:"2026-05-20",v:5.5796},{t:"2026-06-03",v:6.3808},{t:"2026-06-17",v:6.9219},
     {t:"2026-07-02",v:7.1175,note:"CBR hike week"},{t:"2026-07-15",v:7.0258},
     {t:"2026-08-12",v:6.7441,note:"Auction 1204 · bids 3.7× the 364-day offer"},
-    {t:"2026-08-26",v:6.6492,note:"Auction 1205 · bids 2.6× the 364-day offer"}
+    {t:"2026-08-26",v:6.6492,note:"Auction 1205 · bids 2.6× the 364-day offer"},
+    {t:"2026-09-09",v:6.4735,note:"Auction 1206 · bids 3.8× the 364-day offer"}
   ],
   tbill182: [
     {t:"2025-04-09",v:8.4742},{t:"2025-04-23",v:8.4742},{t:"2025-05-14",v:8.3284},
@@ -422,18 +424,17 @@ const DATA = { /* INJECT-DATA */
     {t:"2026-04-08",v:5.5702},{t:"2026-04-22",v:5.3569},{t:"2026-05-06",v:5.2681},
     {t:"2026-05-20",v:5.1898},{t:"2026-06-03",v:5.0426},{t:"2026-06-17",v:4.9181},
     {t:"2026-07-02",v:4.6994},{t:"2026-07-15",v:4.7799},{t:"2026-08-12",v:5.1803},
-    {t:"2026-08-26",v:5.0546}
+    {t:"2026-08-26",v:5.0546},{t:"2026-09-09",v:4.9248,note:"Auction 1206 · bids 2.3× the 182-day offer"}
   ],
   fx: [
     {t:"2025-06",v:2604.6},{t:"2025-07",v:2545.8},{t:"2025-08",v:2463.3},
     {t:"2025-09",v:2442.8},{t:"2025-10",v:2451.6},{t:"2025-11",v:2436.8,note:"Strongest point of the year for the shilling"},
     {t:"2025-12",v:2447.5},{t:"2026-01",v:2518.1},{t:"2026-02",v:2542.5},
     {t:"2026-03",v:2577.4},{t:"2026-04",v:2602},{t:"2026-05",v:2609.2},
-    {t:"2026-06",v:2623.5},
-    {t:"2026-09-02",v:2653,note:"Latest BOT indicative selling rate (buying 2,626.73) — not end-of-month"}
+    {t:"2026-06",v:2623.5},{t:"2026-07",v:2649.7},
+    {t:"2026-09-09",v:2651.91,note:"Latest BOT indicative selling rate (buying 2,625.65) — not end-of-month"}
   ],
   calendar: [
-    {date:"2026-09-09", what:"Treasury bills — all four tenors", m:"New issue"},
     {date:"2026-09-16", what:"5-Year Treasury bond", m:"Re-opening · first 5-year supply since April — a fresh read on the belly of the curve"},
     {date:"2026-09-23", what:"Treasury bills — all four tenors", m:"New issue"},
     {date:"2026-09-30", what:"15-Year Treasury bond", m:"Re-opening · last auction on the published Q1 FY2026/27 calendar"}
@@ -760,11 +761,11 @@ function buildPolicy(){
     plain:"What a bank pays to cash in securities at BOT before they mature — deliberately penalty-priced above the CBR.",
     econ:"A safety valve: banks can always raise emergency liquidity, but at a cost that discourages careless funding.",
     mkt:"Acts as a practical ceiling on short-term funding costs — if market rates approached it, banks would borrow from BOT instead."});
-  tile(g1,{label:"Lombard rate", value:"7.75", unit:"%", delta:"Apr 2026", dir:"fl",
-    sub:"Latest published · Q3 value pending",
-    plain:"The rate for overnight borrowing from BOT against collateral. The published figure predates the July CBR hike, so expect an updated value.",
+  tile(g1,{label:"Lombard rate", value:"7.75", unit:"%", delta:"CBR +150 bps", dir:"up",
+    sub:"Confirmed for Jul 2026 · BOT Monthly Economic Review",
+    plain:"The rate for overnight borrowing from BOT against collateral, set at the upper band of the ±150 bp corridor around the 6.25% CBR.",
     econ:"Part of the same liquidity toolkit — it caps overnight funding stress in the banking system.",
-    mkt:"Watch for the refreshed Q3 figure; it normally tracks the policy rate upward."});
+    mkt:"Moves automatically with the CBR since it is defined as the corridor's top edge."});
   tile(g1,{label:"Next MPC decision", value:"7 Oct", unit:"2026", delta:"in "+daysUntil("2026-10-07")+" days", dir:"fl",
     sub:"Statement & media briefing 8 Oct 2026",
     plain:"The next scheduled CBR decision. After that: 6 Jan 2027 and 31 Mar 2027.",
@@ -792,16 +793,16 @@ function buildEconomy(){
   secHead(sec,"Economy","Growth and prices",
     'Two numbers drive everything else on this page: <b>inflation</b> (how fast prices rise) and <b>GDP growth</b> (how fast the economy expands). Policy tries to keep the first inside 3–5% without choking the second.');
   const g=el("div","grid c4"); sec.append(g);
-  tile(g,{label:"Headline inflation", value:"4.2", unit:"% y/y", delta:"+0.2 pp", dir:"up",
-    sub:"July 2026 · NBS release, 10 Aug",
-    plain:"A typical basket of goods costs 4.2% more than a year ago — up from 4.0% in June, but still inside the 3–5% target band.",
-    econ:"Moderate and predictable inflation preserves buying power; it is the climb from 3.2% in March that pushed the MPC to hike.",
-    mkt:"Inflation is the floor under yields: a 364-day bill at 6.65% pays roughly 2.4% after inflation. If inflation keeps rising, investors demand higher yields to compensate.",
+  tile(g,{label:"Headline inflation", value:"4.3", unit:"% y/y", delta:"+0.1 pp", dir:"up",
+    sub:"August 2026 · NBS release, 8 Sep",
+    plain:"A typical basket of goods costs 4.3% more than a year ago — up slightly from 4.2% in July, but still inside the 3–5% target band.",
+    econ:"Moderate and predictable inflation preserves buying power; it is the climb from 3.2% in March that pushed the MPC to hike in July.",
+    mkt:"Inflation is the floor under yields: a 364-day bill at 6.47% pays roughly 2.1% after inflation. If inflation keeps rising, investors demand higher yields to compensate.",
     learnQ:"Headline vs core — what's the difference?",
-    learnA:"Headline counts everything in the basket. Core (3.9%) strips out unprocessed food, energy and utilities — the volatile items — so it shows the underlying trend. When core rises too, the pressure is broad, not just a food-price blip."});
-  tile(g,{label:"Core inflation", value:"3.9", unit:"% y/y", delta:"+0.2 pp", dir:"up",
-    sub:"July 2026 · 73.9% of the basket",
-    plain:"Underlying inflation without volatile food and energy — also drifting up, which tells the MPC the pressure isn't only food.",
+    learnA:"Headline counts everything in the basket. Core (4.1%) strips out unprocessed food, energy and utilities — the volatile items — so it shows the underlying trend. When core rises too, the pressure is broad, not just a food-price blip."});
+  tile(g,{label:"Core inflation", value:"4.1", unit:"% y/y", delta:"+0.2 pp", dir:"up",
+    sub:"August 2026 · 73.9% of the basket",
+    plain:"Underlying inflation without volatile food and energy — rose further even as food inflation eased to 3.7%, which tells the MPC the pressure is broadening.",
     econ:"Broadening price pressure is harder to reverse than a food-price spike.",
     mkt:"Core drives policy more than headline — its climb supports rates staying higher for now."});
   tile(g,{label:"GDP growth 2025", value:"5.9", unit:"%", delta:"vs 5.6% in 2024", dir:"up",
@@ -877,42 +878,42 @@ function buildTbills(){
   secHead(sec,"Treasury Bills","Short-term rates, discovered fortnightly",
     'T-bills are government IOUs of a year or less, sold at a discount and repaid at face value. They are the <b>reference for all short-term money</b> — banks price deposits and short-term lending off them, and the 364-day bill is the benchmark. Auction results are the market’s fortnightly verdict on where short-term rates should sit.');
   const g=el("div","grid c4"); sec.append(g);
-  tile(g,{label:"364-day bill", value:"6.65", unit:"%", delta:"−9 bps", dir:"dn",
-    sub:"Auction 1205 · 26 Aug 2026",
-    plain:"The benchmark. Bids of TZS 228bn chased just TZS 89bn on offer (2.6× covered), nudging the yield down from 6.74%.",
+  tile(g,{label:"364-day bill", value:"6.47", unit:"%", delta:"−18 bps", dir:"dn",
+    sub:"Auction 1206 · 9 Sep 2026",
+    plain:"The benchmark. Bids of TZS 336.5bn chased just TZS 89bn on offer (3.8× covered), pushing the yield down from 6.65%.",
     econ:"Sits just above the 6.25% CBR — short-term money is priced tight to policy.",
     mkt:"The single most-watched rate for pricing deposits, repos and money-market funds."});
-  tile(g,{label:"182-day bill", value:"5.05", unit:"%", delta:"−13 bps", dir:"dn",
-    sub:"Auction 1205 · fully taken up",
-    plain:"TZS 135bn tendered for TZS 80bn on offer (1.7× covered). Eased back after two rising auctions; still above the June low of 4.92%.",
+  tile(g,{label:"182-day bill", value:"4.92", unit:"%", delta:"−13 bps", dir:"dn",
+    sub:"Auction 1206 · 2.3× covered",
+    plain:"TZS 185bn tendered for TZS 79.9bn on offer (2.3× covered) — back at the June low of 4.92%.",
     econ:"Heavy demand for 6-month paper keeps the government's mid-tenor funding cheap.",
-    mkt:"The gap below the 364-day (~1.6 pp) rewards going longer at the short end."});
-  tile(g,{label:"91-day bill", value:"3.40", unit:"%", delta:"undersubscribed", dir:"dn",
-    sub:"Auction 1205 · TZS 40bn of 70bn taken",
-    plain:"Well below the CBR — banks park very short money cheaply because liquidity is plentiful at this tenor.",
-    econ:"A sign of comfortable bank liquidity rather than distress.",
-    mkt:"Undersubscription here while the 364-day is 2.6× covered shows investors stretching for yield."});
-  tile(g,{label:"35-day bill", value:"2.09", unit:"%", delta:"undersubscribed", dir:"dn",
-    sub:"Auction 1205 · TZS 40bn of 50bn taken",
-    plain:"The shortest tenor, mainly a cash-management tool — its yield says little about policy.",
+    mkt:"The gap below the 364-day (~1.5 pp) rewards going longer at the short end."});
+  tile(g,{label:"91-day bill", value:"3.42", unit:"%", delta:"+3 bps", dir:"up",
+    sub:"Auction 1206 · 1.6× covered",
+    plain:"TZS 110bn tendered for TZS 69.9bn on offer — oversubscribed this time, a change from the prior auction's shortfall.",
+    econ:"A modest lift shows funding conditions inching up even at the shortest tenors that matter.",
+    mkt:"Fully allotted and 1.6× covered — the earlier slack at this tenor has disappeared."});
+  tile(g,{label:"35-day bill", value:"2.29", unit:"%", delta:"+20 bps", dir:"up",
+    sub:"Auction 1206 · 1.2× covered",
+    plain:"TZS 59bn tendered for TZS 49.9bn on offer — still mainly a cash-management tool, but now fully covered rather than falling short.",
     econ:"Very cheap month-long money for the government.",
     mkt:"Treat it as a parking rate, not a benchmark."});
   const g2=el("div","grid c3"); g2.style.marginTop="14px"; sec.append(g2);
-  tile(g2,{label:"Auction 1205 demand", value:"1.53", unit:"× covered",
-    sub:"TZS 443bn tendered vs 289bn offered",
-    plain:"Bids comfortably beat the offer, though demand cooled from 1.87× at the previous auction; the 364-day tenor still drew 2.6× its offer.",
-    econ:"Strong demand lets the government fund itself without paying up.",
-    mkt:"Falling cover ratios would be the early warning that yields need to rise."});
+  tile(g2,{label:"Auction 1206 demand", value:"2.39", unit:"× covered",
+    sub:"TZS 690.5bn tendered vs 288.7bn offered",
+    plain:"Bids surged to 2.39× the offer — up sharply from 1.53× at the previous auction — with every tenor oversubscribed for the first time in months; the 364-day tenor alone drew 3.8× its offer.",
+    econ:"Even stronger demand lets the government fund itself very cheaply across every tenor.",
+    mkt:"Broad-based oversubscription (previously only the mid/long tenors cleared it) signals ample liquidity chasing short paper."});
   tile(g2,{label:"Interbank 7-day rate", value:"6.41", unit:"%", delta:"24 Aug", dir:"up",
     sub:"Overnight: 6.20% (21 Aug) · June avg 5.98%",
     plain:"What banks charge each other for week-long money — risen since the CBR hike, and sitting inside the ±150 bp corridor around 6.25%.",
     econ:"Proof the July hike transmitted: bank funding costs followed the CBR up.",
-    mkt:"The corridor anchor confirms T-bill yields near 6.65% are consistent with policy, not an anomaly."});
-  tile(g2,{label:"Overall T-bill WAY", value:"4.83", unit:"%", delta:"Jun 2026", dir:"up",
-    sub:"Monthly average across all tenors · MER",
-    plain:"BOT's monthly average across all four tenors — dragged below the benchmark by the cheap 35- and 91-day tenors.",
+    mkt:"The corridor anchor confirms T-bill yields near 6.47% are consistent with policy, not an anomaly."});
+  tile(g2,{label:"Overall T-bill WAY", value:"4.74", unit:"%", delta:"−9 bps", dir:"dn",
+    sub:"July 2026 · monthly average, MER",
+    plain:"BOT's monthly average across all four tenors fell to 4.74% in July from 4.83% in June — still dragged below the benchmark by the cheap 35- and 91-day tenors.",
     econ:"The government's blended short-term funding cost.",
-    mkt:"Compare with 6.65% on the 364-day to see how much tenor choice matters."});
+    mkt:"Compare with 6.47% on the 364-day auction to see how much tenor choice matters."});
   chartCard(sec,{title:"T-bill yields by auction",
     note:"Every auction since February 2025. The two short tenors (35 & 91-day) are excluded — several auctions had no successful bids.",
     series:[{name:"364-day", color:"var(--s1)", points:DATA.tbill364},
@@ -945,31 +946,31 @@ function buildMarket(){
   secHead(sec,"Market Snapshot","The wider picture",
     'The backdrop every yield trades against: the shilling, the country’s FX buffers, and how fast money and credit are growing.');
   const g=el("div","grid c3"); sec.append(g);
-  tile(g,{label:"TZS / USD", value:"2,653.00", unit:"TZS", delta:"weaker y/y", dir:"up",
-    sub:"BOT selling rate · 2 Sep 2026 (buying 2,626.73)",
-    plain:"It takes 2,653 shillings to buy a dollar — about 8% more than a year ago. On this chart, up = weaker shilling.",
+  tile(g,{label:"TZS / USD", value:"2,651.91", unit:"TZS", delta:"weaker y/y", dir:"up",
+    sub:"BOT selling rate · 9 Sep 2026 (buying 2,625.65)",
+    plain:"It takes 2,651.91 shillings to buy a dollar — about 9% more than a year ago. On this chart, up = weaker shilling.",
     econ:"A weaker shilling makes imports (fuel, fertiliser) pricier — one of the channels behind the inflation climb.",
     mkt:"FX weakness pressures BOT to keep policy tight, which supports higher yields."});
-  tile(g,{label:"FX reserves", value:"5.67", unit:"USD bn", delta:"4.4 months cover", dir:"fl",
-    sub:"End-June 2026 · benchmark is 4 months",
-    plain:"Enough foreign currency to pay for 4.4 months of imports — above the national comfort line, supported by gold exports and BOT's domestic gold-buying programme.",
+  tile(g,{label:"FX reserves", value:"6.20", unit:"USD bn", delta:"4.8 months cover", dir:"up",
+    sub:"End-July 2026 · benchmark is 4 months",
+    plain:"Enough foreign currency to pay for 4.8 months of imports — up from 4.4 months in June, comfortably above the national comfort line, supported by gold exports and BOT's domestic gold-buying programme.",
     econ:"Reserves are the buffer that lets BOT smooth FX shocks.",
     mkt:"Comfortable reserves reduce the tail risk foreign investors price into TZS assets."});
-  tile(g,{label:"Private-sector credit", value:"28.1", unit:"% y/y", delta:"from 23.2%", dir:"up",
-    sub:"June 2026 · trade +59.5%, transport +46.4%",
-    plain:"Bank lending to businesses and households is growing very fast — led by trade, transport and agriculture.",
-    econ:"Credit this strong fuels growth but is one reason the MPC leans against inflation.",
+  tile(g,{label:"Private-sector credit", value:"31.2", unit:"% y/y", delta:"from 28.1%", dir:"up",
+    sub:"July 2026 · led by transport & communication, mining and trade",
+    plain:"Bank lending to businesses and households accelerated further — led by transport & communication, mining and quarrying, and trade.",
+    econ:"Credit growth this rapid strengthens the case for keeping policy tight.",
     mkt:"Banks lending heavily to the private sector have less idle cash for T-bills — over time that competes yields upward."});
   const g2=el("div","grid c3"); g2.style.marginTop="14px"; sec.append(g2);
-  tile(g2,{label:"Money supply (M3)", value:"25.5", unit:"% y/y",
-    sub:"June 2026 · table figure 25.4%",
-    plain:"The broadest measure of money in the economy, growing fast — consistent with the credit boom.",
+  tile(g2,{label:"Money supply (M3)", value:"26.9", unit:"% y/y",
+    sub:"July 2026 · up from 25.5% in June",
+    plain:"The broadest measure of money in the economy grew even faster — consistent with the credit boom.",
     econ:"Rapid money growth is a medium-term inflation watch-item.",
     mkt:"More money in the system also means more cash chasing auctions — part of the oversubscription story."});
-  tile(g2,{label:"Current account", value:"−2.30", unit:"USD bn", delta:"wider y/y", dir:"dn",
-    sub:"Year to June 2026 · was −2.15bn",
-    plain:"The country buys slightly more from the world than it sells; imports grew 20.6%, exports 17.2%.",
-    econ:"A modest deficit (~2.4% of GDP) financed by investment inflows — manageable, but it leans on the shilling.",
+  tile(g2,{label:"Current account", value:"−2.40", unit:"USD bn", delta:"wider y/y", dir:"dn",
+    sub:"Year to July 2026 · was −1.98bn",
+    plain:"The country buys more from the world than it sells; the deficit widened 21.3%, driven by investment- and energy-related import demand outweighing export growth.",
+    econ:"A wider deficit financed by investment inflows — manageable, but it leans on the shilling.",
     mkt:"Persistent widening would pressure the currency and, eventually, yields."});
   tile(g2,{label:"Banking health (NPLs)", value:"2.9", unit:"%",
     sub:"May 2026 · threshold 5%",
