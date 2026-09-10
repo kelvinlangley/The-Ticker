@@ -14,7 +14,7 @@
     --bad:#b3261e; --bad-soft:#fdeceb; --warn:#8a6d00; --warn-soft:#fdf6df;
     --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
     --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-    --maxw:880px;
+    --maxw:820px;
   }
   body{background:var(--page); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55; margin:0; -webkit-font-smoothing:antialiased}
 
@@ -50,26 +50,28 @@
   main{max-width:var(--maxw); margin:0 auto; padding:22px 22px 70px}
   @media (max-width:640px){ main{padding:16px 14px 60px} }
   .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:16px; box-shadow:0 1px 2px rgba(23,36,29,.05), 0 14px 34px -26px rgba(23,36,29,.4)}
-  .card h3{font-size:13.5px; margin:0 0 14px; text-transform:uppercase; letter-spacing:.08em; color:var(--green2)}
-  .row{display:grid; gap:14px; grid-template-columns:repeat(2,1fr); margin-bottom:14px}
-  .row.c3{grid-template-columns:repeat(3,1fr)}
-  .row:last-child{margin-bottom:0}
-  @media (max-width:640px){ .row,.row.c3{grid-template-columns:1fr} }
-  .f{display:flex; flex-direction:column; gap:5px}
-  .f label{font-size:12.5px; font-weight:600; color:var(--ink2)}
+  .card h3{font-size:13.5px; margin:0 0 16px; text-transform:uppercase; letter-spacing:.1em; color:var(--green2)}
+  .f{display:flex; flex-direction:column; gap:5px; margin-bottom:16px}
+  .f:last-child{margin-bottom:0}
+  .f label{font-size:13px; font-weight:600; color:var(--ink)}
   .f label .req{color:var(--bad)}
   .f .hint{font-size:11.5px; color:var(--muted)}
-  .f input,.f select,.f textarea{font:inherit; font-size:14.5px; color:var(--ink); background:#fff; border:1px solid var(--border2); border-radius:9px; padding:9px 11px; width:100%; box-sizing:border-box}
-  .f input:focus,.f select:focus,.f textarea:focus{outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(0,113,61,.16)}
+  .f input,.f select{font:inherit; font-size:14.5px; color:var(--ink); background:#fff; border:1px solid var(--border2); border-radius:9px; padding:10px 12px; width:100%; box-sizing:border-box}
+  .f input:focus,.f select:focus{outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(0,113,61,.16)}
   .f.invalid input,.f.invalid select{border-color:var(--bad); background:var(--bad-soft)}
   .f .err{display:none; font-size:12px; color:var(--bad); font-weight:500}
   .f.invalid .err{display:block}
+  .f.invalid .radios{outline:2px solid var(--bad); outline-offset:4px; border-radius:8px}
+  .radios{display:flex; gap:10px; flex-wrap:wrap}
+  .radios label{display:flex; gap:8px; align-items:center; border:1.5px solid var(--border2); border-radius:10px; padding:10px 14px; cursor:pointer; font-weight:500; font-size:13.5px; background:#fff; transition:border-color .15s, box-shadow .15s}
+  .radios label:hover{border-color:var(--green)}
+  .radios input{accent-color:var(--green); width:16px; height:16px}
+  .radios label.sel{border-color:var(--green); background:var(--green-soft); box-shadow:0 0 0 1px var(--green)}
   .btn{appearance:none; font:inherit; font-size:13.5px; font-weight:600; border-radius:10px; padding:10px 18px; cursor:pointer; border:1px solid var(--border2); background:#fff; color:var(--ink); transition:border-color .15s, box-shadow .15s, transform .15s}
   .btn:hover{border-color:var(--green); box-shadow:0 5px 16px -10px rgba(0,113,61,.55)}
   .btn.primary{background:linear-gradient(165deg,#00874a,var(--green2)); border-color:transparent; color:#fff; box-shadow:0 7px 20px -10px rgba(0,90,49,.65)}
   .btn.primary:hover{filter:brightness(1.06); transform:translateY(-1px)}
   .btn.small{font-size:12.5px; padding:6px 12px}
-  .btn.ghost{border-color:transparent; color:var(--green2)}
   .btn:disabled{opacity:.5; cursor:not-allowed; transform:none}
   .note{border-left:3px solid var(--green); background:var(--green-soft); border-radius:0 8px 8px 0; padding:10px 14px; font-size:13px; color:var(--ink2); margin:12px 0}
   .note.warn{border-color:var(--warn); background:var(--warn-soft)}
@@ -78,21 +80,15 @@
 
   /* auction card */
   .auction{border:1px solid var(--green-line); background:linear-gradient(180deg,#fbfdfb, var(--green-soft)); border-radius:14px; padding:20px 22px; margin-bottom:16px}
-  .auction .sec{font-size:19px; font-weight:700; letter-spacing:-.01em}
-  .auction .no{font-family:var(--mono); font-size:12px; color:var(--green2); font-weight:600; text-transform:uppercase; letter-spacing:.1em; margin-bottom:4px}
+  .auction .sec{font-size:20px; font-weight:700; letter-spacing:-.01em}
+  .auction .deadline{margin-top:6px; font-size:13.5px; font-weight:600; color:var(--ink2)}
+  .auction .deadline b{color:var(--ink)}
   .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
   .chip{background:#fff; border:1px solid var(--green-line); border-radius:9px; padding:7px 12px; font-size:12px}
   .chip b{display:block; font-family:var(--mono); font-size:13px; color:var(--ink)}
   .chip span{color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em}
-  .cutoff{margin-top:12px; font-size:12.5px; font-weight:600}
+  .cutoff{margin-top:12px; font-size:12.5px; font-weight:700}
   .cutoff.open{color:var(--green2)} .cutoff.closed{color:var(--bad)}
-
-  /* bid lines */
-  .line{display:grid; grid-template-columns:32px repeat(auto-fit, minmax(130px, 1fr)) 36px; gap:10px; align-items:start; padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:10px; background:var(--card2)}
-  .line .n{font-family:var(--mono); font-weight:600; color:var(--green2); padding-top:32px; text-align:center}
-  .line .del{padding-top:28px}
-  .line .del button{width:30px; height:30px; border-radius:50%; border:1px solid var(--border2); background:#fff; color:var(--bad); font-weight:700; cursor:pointer}
-  @media (max-width:640px){ .line{grid-template-columns:28px 1fr; } .line .f{grid-column:2} .line .del{grid-column:2; padding-top:0} .line .n{padding-top:10px} }
 
   .views > section{display:none}
   .views > section.active{display:block}
@@ -103,13 +99,12 @@
   .foot{max-width:var(--maxw); margin:0 auto; padding:0 22px 40px; font-size:12px; color:var(--muted)}
   .sr-live{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
 
-  /* review modal */
   dialog{border:none; border-radius:14px; padding:0; max-width:520px; width:92vw; box-shadow:0 30px 80px rgba(0,0,0,.35)}
   dialog::backdrop{background:rgba(20,30,24,.55)}
   .dlg-body{padding:22px}
   .dlg-body h3{margin:0 0 12px; font-size:16px}
   table.rv{width:100%; border-collapse:collapse; font-size:13px}
-  .rv th{text-align:left; color:var(--muted); font-weight:600; padding:6px 12px 6px 0; vertical-align:top; width:40%; border-bottom:1px solid var(--border)}
+  .rv th{text-align:left; color:var(--muted); font-weight:600; padding:6px 12px 6px 0; vertical-align:top; width:42%; border-bottom:1px solid var(--border)}
   .rv td{padding:6px 0; border-bottom:1px solid var(--border); font-family:var(--mono)}
   .dlg-actions{display:flex; justify-content:flex-end; gap:10px; padding:14px 22px 20px}
 </style>
@@ -127,8 +122,8 @@
       </div>
     </div>
     <h1>Auction Bid Entry</h1>
-    <p class="sub">Staff portal — capture client bids for the current Bank of Tanzania auction (CDS/FORM/03).</p>
-    <div class="staffbar" id="staffbar"><span>Signed in: <b id="staff-name"></b> · <span id="staff-branch"></span></span><button type="button" id="btn-logout">Log out</button></div>
+    <p class="sub">Staff portal — submit client bids for the current Bank of Tanzania auction.</p>
+    <div class="staffbar" id="staffbar"><span>Signed in: <b id="staff-name"></b> · <span id="staff-email"></span></span><button type="button" id="btn-logout">Log out</button></div>
   </div>
 </header>
 
@@ -140,19 +135,19 @@
     <section id="v-login" class="active">
       <div class="card center">
         <h3>Staff sign-in</h3>
-        <div class="f" style="margin-bottom:12px">
-          <label for="staffId">Staff ID <span class="req">*</span></label>
-          <input id="staffId" inputmode="numeric" autocomplete="username">
-          <div class="err">Enter your staff ID</div>
+        <div class="f">
+          <label for="loginEmail">CRDB e-mail <span class="req">*</span></label>
+          <input id="loginEmail" type="email" autocomplete="username" placeholder="kelvin.njelekela@crdbbank.co.tz">
+          <div class="err">Must be a @crdbbank.co.tz address</div>
         </div>
-        <div class="f" style="margin-bottom:16px">
-          <label for="staffPin">PIN <span class="req">*</span></label>
-          <input id="staffPin" type="password" inputmode="numeric" autocomplete="current-password">
-          <div class="err">Enter your PIN</div>
+        <div class="f">
+          <label for="loginStaffNo">Staff number <span class="req">*</span></label>
+          <input id="loginStaffNo" type="password" inputmode="numeric" maxlength="5" autocomplete="current-password" placeholder="digits, max 5">
+          <div class="err">Digits only, up to 5</div>
         </div>
         <div class="note bad" id="login-err" style="display:none"></div>
         <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
-        <p class="hint" style="font-size:12px; color:var(--muted); margin:12px 0 0">Access is limited to authorised CRDB staff. Accounts are managed by the brokerage admin.</p>
+        <p class="hint" style="font-size:12px; color:var(--muted); margin:12px 0 0">Access is limited to authorised CRDB staff on the brokerage staff list.</p>
       </div>
     </section>
 
@@ -162,38 +157,59 @@
 
       <form id="bidform" novalidate>
         <div class="card">
-          <h3>Client</h3>
-          <div class="row">
-            <div class="f"><label for="clientName">Client name (as on the CDS account) <span class="req">*</span></label>
-              <input id="clientName" autocomplete="off"><div class="err">Required</div></div>
-            <div class="f"><label for="clientCDS">Client CDS account No. <span class="req">*</span></label>
-              <input id="clientCDS" autocomplete="off" placeholder="digits only">
-              <label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--ink2);font-weight:500;margin-top:2px"><input type="checkbox" id="cdsPending" style="accent-color:var(--green)"> CDS application still pending — enter the application reference instead</label>
-              <div class="err">Digits only (up to 12) — or tick "pending" and give the application reference</div></div>
-            <div class="f"><label for="fundingAccount">CRDB funding account to debit <span class="req">*</span></label>
-              <input id="fundingAccount" inputmode="numeric" autocomplete="off">
-              <div class="err">10–16 digits</div></div>
-            <div class="f"><label for="instructionRef">Client instruction ref. <span class="req">*</span></label>
-              <input id="instructionRef" autocomplete="off" placeholder="order form no. / call ref / e-mail date">
-              <div class="hint">How the client authorised this bid — required for the register.</div>
-              <div class="err">Required (2–60 characters)</div></div>
-            <div class="f"><label for="clientPhone">Client phone</label>
-              <input id="clientPhone" type="tel" inputmode="tel" placeholder="7XXXXXXXX or +…">
-              <div class="err">9 digits starting 6/7, or full international with +</div></div>
-          </div>
-        </div>
+          <h3>Bid Form</h3>
 
-        <div class="card">
-          <h3>Bid lines <span style="float:right; font-size:11px; letter-spacing:.02em; text-transform:none; color:var(--muted); font-weight:500">Up to 4 per form (CDS/FORM/03) · price per 100 shillings, max 4 decimals</span></h3>
-          <div id="lines"></div>
-          <button type="button" class="btn small" id="btn-addline">+ Add bid line</button>
-        </div>
+          <div class="f"><label for="investorNames">1. Investors Full Names <span class="req">*</span></label>
+            <input id="investorNames" autocomplete="off"><div class="err">Required</div></div>
 
-        <div class="card">
-          <div class="f"><label for="remarks">Remarks (optional)</label><input id="remarks" autocomplete="off"></div>
-          <div class="note warn" id="closed-note" style="display:none"><b>Bidding is closed for this auction.</b> Contact the admin if a late bid must be recorded.</div>
+          <div class="f" id="f-nature"><label>2. Nature of Investor <span class="req">*</span></label>
+            <div class="radios" id="nature-radios">
+              <label><input type="radio" name="nature" value="Client"> Client</label>
+              <label><input type="radio" name="nature" value="Client with Approval"> Client with Approval</label>
+              <label><input type="radio" name="nature" value="Staff with Approval"> Staff with Approval</label>
+            </div><div class="err">Choose one</div></div>
+
+          <div class="f"><label for="securitiesAccount">3. Securities Account Number <span class="req">*</span></label>
+            <input id="securitiesAccount" autocomplete="off" style="text-transform:uppercase">
+            <div class="hint">i.e (BOTCDSB026xxxx or BOTCDSCORUxxxx)</div>
+            <div class="err">Must start with BOTCDSB or BOTCDSCORU</div></div>
+
+          <div class="f" id="f-tenor" style="display:none"><label for="tenorSel">Tenor <span class="req">*</span></label>
+            <select id="tenorSel"></select></div>
+
+          <div class="f"><label for="faceValue">4. Face Value <span class="req">*</span></label>
+            <input id="faceValue" inputmode="numeric" autocomplete="off" placeholder="TZS, e.g. 1,000,000">
+            <div class="hint" id="face-hint"></div>
+            <div class="err" id="face-err">Required</div></div>
+
+          <div class="f" id="f-priceType"><label>5. Price <span class="req">*</span></label>
+            <div class="radios" id="price-radios">
+              <label><input type="radio" name="priceType" value="Clean Price"> Clean Price</label>
+              <label><input type="radio" name="priceType" value="Weighted Average Price (WAP)"> Weighted Average Price (WAP)</label>
+            </div><div class="err">Choose one</div></div>
+
+          <div class="f" id="f-cleanPrice" style="display:none"><label for="cleanPrice">6. Clean price (per 100) <span class="req">*</span></label>
+            <input id="cleanPrice" inputmode="decimal" autocomplete="off" placeholder="e.g. 101.0371">
+            <div class="hint">maximum 4 decimals e.g 101.0371</div>
+            <div class="err" id="clean-err">Number with at most 4 decimal places</div></div>
+
+          <div class="f"><label for="accountToDebit">7. Account to Debit <span class="req">*</span></label>
+            <input id="accountToDebit" inputmode="numeric" autocomplete="off">
+            <div class="err">10–16 digits</div></div>
+
+          <div class="f"><label for="branch">8. Branch <span class="req">*</span></label>
+            <input id="branch" autocomplete="off"><div class="err">Required</div></div>
+
+          <div class="f"><label for="responsible">9. Responsible Person <span class="req">*</span></label>
+            <input id="responsible" autocomplete="off"><div class="err">Required</div></div>
+
+          <div class="f"><label for="clientEmail">Client e-mail <span class="hint" style="display:inline">(for sharing auction results — leave blank if none)</span></label>
+            <input id="clientEmail" type="email" autocomplete="off">
+            <div class="err">Not a valid e-mail address</div></div>
+
+          <div class="note warn" id="closed-note" style="display:none"><b>The submission deadline has passed.</b> Contact the admin if a late bid must be recorded.</div>
           <div class="note bad" id="submit-err" style="display:none"></div>
-          <div style="display:flex; justify-content:flex-end; margin-top:14px">
+          <div style="display:flex; justify-content:flex-end; margin-top:6px">
             <button type="button" class="btn primary" id="btn-review">Review &amp; submit bid</button>
           </div>
         </div>
@@ -213,7 +229,7 @@
   </div>
 </main>
 
-<div class="foot">CRDB Brokerage staff portal · Bids feed the desk's register for lodgment with the Bank of Tanzania. <b>Admin:</b> auctions, staff access and the bid register are managed in the portal's Google Sheet (Auctions / Staff / Bids tabs).</div>
+<div class="foot">CRDB Brokerage staff portal · Bids feed the desk's register for lodgment with the Bank of Tanzania. <b>Admin:</b> auctions, staff access and the bid register live in the portal's Google Sheet (Auctions / Staff / Bids tabs).</div>
 
 <dialog id="dlg">
   <div class="dlg-body">
@@ -232,17 +248,19 @@
 const CONFIG = {
   // Google Apps Script Web App URL for the bids backend
   // (cds/backend/bids-apps-script.gs). Leave "" for demo mode: a sample
-  // auction is shown, staff 1001 / PIN 1234 can sign in, nothing is sent.
+  // auction is shown, any @crdbbank.co.tz e-mail with staff number 10001
+  // can sign in, nothing is sent.
   API_URL: "",
 };
 const DEMO = !CONFIG.API_URL;
+const STAFF_DOMAIN = "crdbbank.co.tz";
 const DEMO_AUCTION = {
-  auctionNo: "711 (re-open)", security: "10-Year Treasury Bond (re-opening)",
+  auctionNo: "711 (Re-open)", security: "11.25% 10yrs T-Bond",
   coupon: "11.25%", isin: "TZ1996106112", auctionDate: "2026-09-02",
-  settlementDate: "2026-09-04", maturityPeriod: "10 years",
-  minBid: 1000000, multiple: 100000, priceMin: 80, priceMax: 130,
-  tenors: [], maxNonComp: 0,
-  cutoff: "2099-01-01 10:00", notes: "Demo data — connect the backend to go live", open: true,
+  settlementDate: "2026-09-04", maturityPeriod: "10 years", tenors: [],
+  minBid: 1000000, multiple: 100000, priceMin: 80, priceMax: 130, maxWap: 0,
+  deadline: "2/09/2099 09:00 AM", cutoff: "2099-09-02 09:00",
+  notes: "Demo data — connect the backend to go live", open: true,
 };
 
 const $ = (s, r=document) => r.querySelector(s);
@@ -250,19 +268,22 @@ const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmtTZS = n => Number(n).toLocaleString("en-US");
 const fmtTZS2 = n => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+const staffEmailOk = v => new RegExp("^[a-z0-9._%+-]+@" + STAFF_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(v);
 
 const state = { auction: null, token: null, staff: null, lastPayload: null };
 
-/* ════════ tiny helpers ════════ */
+/* ════════ helpers ════════ */
 function announce(msg){
   let live = document.getElementById("sr-live");
   if(!live){ live = document.createElement("div"); live.className = "sr-live"; live.id = "sr-live"; live.setAttribute("role","alert"); document.body.append(live); }
   live.textContent = ""; requestAnimationFrame(() => { live.textContent = msg; });
 }
 function setInvalid(inp, bad){ inp.closest(".f").classList.toggle("invalid", !!bad); return !bad; }
-function focusFirstInvalid(root){
-  const bad = $(".f.invalid input, .f.invalid select", root || document);
+function focusFirstInvalid(){
+  const bad = $(".f.invalid input, .f.invalid select");
   if(bad){ bad.scrollIntoView({block:"center", behavior:"smooth"}); try{ bad.focus({preventScroll:true}); }catch(e){} }
+  else { const g = $(".f.invalid"); if(g) g.scrollIntoView({block:"center", behavior:"smooth"}); }
   announce("Please correct the highlighted fields.");
 }
 function show(view){
@@ -277,11 +298,11 @@ async function api(body){
 }
 function demoApi(body){
   if(body.action === "login")
-    return body.staffId === "1001" && body.pin === "1234"
-      ? { ok:true, token:"demo", name:"Sample Staff", branch:"Head Office (demo)" }
-      : { ok:false, error:"Unknown staff ID or wrong PIN (demo accepts 1001 / 1234)" };
+    return staffEmailOk(body.email) && body.staffNo === "10001"
+      ? { ok:true, token:"demo", name:"Sample Staff", branch:"Head Office (demo)", staffNo:"10001" }
+      : { ok:false, error:"E-mail and staff number do not match (demo accepts any @" + STAFF_DOMAIN + " e-mail with staff number 10001)" };
   if(body.action === "bid")
-    return { ok:true, ref:"BID-DEMO-" + String(Math.floor(Math.random()*9000)+1000), lines: body.lines.length,
+    return { ok:true, ref:"BID-DEMO-" + String(Math.floor(Math.random()*9000)+1000),
       at: new Date().toISOString().slice(0,19).replace("T"," ") };
   return { ok:false, error:"unknown" };
 }
@@ -308,8 +329,8 @@ async function loadAuction(){
     }
     state.auction = a;
     card.innerHTML = `
-      <div class="no">Auction No. ${esc(a.auctionNo)}</div>
-      <div class="sec">${esc(a.security)}</div>
+      <div class="sec">AUCTION ${esc(a.auctionNo)} — ${esc(a.security)}</div>
+      <div class="deadline">Deadline of submission <b>${esc(a.deadline || a.cutoff)}</b> (EAT)</div>
       <div class="chips">
         <span class="chip"><span>Coupon</span><b>${esc(a.coupon)}</b></span>
         <span class="chip"><span>ISIN</span><b>${esc(a.isin)}</b></span>
@@ -317,27 +338,22 @@ async function loadAuction(){
         <span class="chip"><span>Settlement</span><b>${esc(a.settlementDate)}</b></span>
         <span class="chip"><span>Minimum bid</span><b>TZS ${fmtTZS(a.minBid)}</b></span>
         <span class="chip"><span>Multiples of</span><b>TZS ${fmtTZS(a.multiple)}</b></span>
-        <span class="chip"><span>Price band /100</span><b>${esc(a.priceMin)} – ${esc(a.priceMax)}</b></span>
+        <span class="chip"><span>Clean price band /100</span><b>${esc(a.priceMin)} – ${esc(a.priceMax)}</b></span>
       </div>
       <div class="cutoff" id="cutoff"></div>
       ${a.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(a.notes)}</div>` : ""}`;
+    $("#face-hint").textContent = "Minimum TZS " + fmtTZS(a.minBid) + ", in multiples of TZS " + fmtTZS(a.multiple);
+    const tf = $("#f-tenor"), ts = $("#tenorSel");
+    tf.style.display = a.tenors.length ? "" : "none";
+    if(a.tenors.length){ const cur = ts.value;
+      ts.innerHTML = a.tenors.map(t => `<option>${esc(t)}</option>`).join("");
+      if(a.tenors.indexOf(cur) >= 0) ts.value = cur; }
     tickCutoff(); if(state._t) clearInterval(state._t); state._t = setInterval(tickCutoff, 30000);
-    syncTenorSelects();
   }catch(e){
     if(state.auction){ announce("Connection blip while refreshing the auction — keeping current details."); return; }
     $("#btn-review").disabled = true;
     card.innerHTML = `<div class="note bad" style="margin:0"><b>Could not load the auction.</b> ${esc(e.message)} — <button type="button" class="btn small" onclick="loadAuction()">Retry</button></div>`;
   }
-}
-function syncTenorSelects(){
-  const tenors = (state.auction && state.auction.tenors) || [];
-  $$("#lines .line").forEach(d => {
-    const wrap = $("[data-tenor]", d), sel = $("select[data-k=tenor]", d);
-    wrap.style.display = tenors.length ? "" : "none";
-    const cur = sel.value;
-    sel.innerHTML = tenors.map(t => `<option>${esc(t)}</option>`).join("");
-    if(tenors.indexOf(cur) >= 0) sel.value = cur;
-  });
 }
 function auctionOpen(){
   const a = state.auction; if(!a) return false;
@@ -350,109 +366,57 @@ function tickCutoff(){
   const el = $("#cutoff"); if(!el || !state.auction) return;
   const open = auctionOpen();
   el.className = "cutoff " + (open ? "open" : "closed");
-  el.textContent = open
-    ? "Bidding OPEN · closes " + state.auction.cutoff + " (EAT)"
-    : "Bidding CLOSED (cutoff " + state.auction.cutoff + " EAT)";
+  el.textContent = open ? "Submissions OPEN" : "Submissions CLOSED — deadline passed";
   $("#closed-note").style.display = open ? "none" : "block";
   $("#btn-review").disabled = !open;
 }
 
-/* ════════ bid lines ════════ */
-let lineSeq = 0;
-function lineBlock(i){
-  const d = document.createElement("div");
-  d.className = "line";
-  const tenors = (state.auction && state.auction.tenors) || [];
-  d.innerHTML = `
-    <div class="n">${i + 1}</div>
-    <div class="f" data-tenor style="${tenors.length ? "" : "display:none"}"><label>Tenor <span class="req">*</span></label>
-      <select data-k="tenor">${tenors.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
-    <div class="f"><label>Bid type <span class="req">*</span></label>
-      <select data-k="type"><option>Competitive</option><option>Non-competitive</option></select></div>
-    <div class="f"><label>Face value (TZS) <span class="req">*</span></label>
-      <input data-k="amount" inputmode="numeric" autocomplete="off" placeholder="e.g. 1,000,000">
-      <div class="err"></div></div>
-    <div class="f"><label>Price per 100 <span class="req prc-req">*</span></label>
-      <input data-k="price" inputmode="decimal" autocomplete="off" placeholder="e.g. 103.4215">
-      <div class="err"></div></div>
-    <div class="del">${i > 0 ? '<button type="button" title="Remove line">×</button>' : ""}</div>`;
-  const seq = ++lineSeq;
-  $$("label", d).forEach((lab, j) => { const inp = $$("input,select", d)[j]; if(!inp) return; inp.id = "ln" + seq + "k" + j; lab.htmlFor = inp.id; });
-  $("select[data-k=type]", d).addEventListener("change", e => {
-    const nc = e.target.value === "Non-competitive";
-    const price = $("input[data-k=price]", d);
-    price.disabled = nc; if(nc){ price.value = ""; setInvalid(price, false); }
-    $(".prc-req", d).style.display = nc ? "none" : "inline";
-  });
-  $("input[data-k=amount]", d).addEventListener("input", e => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 13);
-    e.target.value = digits ? fmtTZS(digits) : "";
-  });
-  $("input[data-k=price]", d).addEventListener("input", e => {
-    e.target.value = e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
-  });
-  const del = $(".del button", d);
-  if(del) del.addEventListener("click", () => { d.remove(); renumber(); });
-  return d;
-}
-function renumber(){
-  $$("#lines .line").forEach((d, i) => { $(".n", d).textContent = i + 1; });
-  $("#btn-addline").style.display = $$("#lines .line").length >= 4 ? "none" : "inline-block";
-}
-$("#btn-addline").addEventListener("click", () => {
-  const n = $$("#lines .line").length; if(n >= 4) return;
-  $("#lines").append(lineBlock(n)); renumber();
-});
-
-/* ════════ validation + payload ════════ */
-function readLines(){
-  return $$("#lines .line").map(d => ({
-    type: $("select[data-k=type]", d).value,
-    tenor: $("select[data-k=tenor]", d).value,
-    amount: $("input[data-k=amount]", d).value.replace(/\D/g, ""),
-    price: $("input[data-k=price]", d).value.trim(),
+/* ════════ field behaviour ════════ */
+function bindRadios(groupId){
+  $$("#" + groupId + " input").forEach(inp => inp.addEventListener("change", () => {
+    $$("#" + groupId + " label").forEach(l => l.classList.toggle("sel", l.querySelector("input").checked));
+    if(groupId === "price-radios") syncCleanPrice();
+    setInvalid($("#" + groupId), false);
   }));
 }
-function validate(){
-  const a = state.auction; let ok = true;
-  if(!a) return false;
-  const need = (inp, good, msg) => { const f = inp.closest(".f");
-    if(msg) { const e = $(".err", f); if(e && msg !== true) e.textContent = msg; }
-    ok = setInvalid(inp, !good) && ok; };
-  need($("#clientName"), $("#clientName").value.trim().length > 1);
-  const cdsVal = $("#clientCDS").value.trim();
-  need($("#clientCDS"), $("#cdsPending").checked ? /^[\w-]{4,40}$/.test(cdsVal) : /^\d{1,12}$/.test(cdsVal));
-  need($("#instructionRef"), (v => v.length >= 2 && v.length <= 60)($("#instructionRef").value.trim()));
-  need($("#fundingAccount"), /^\d{10,16}$/.test($("#fundingAccount").value.trim()));
-  const ph = $("#clientPhone").value.replace(/\s/g, "");
-  need($("#clientPhone"), !ph || /^[67]\d{8}$/.test(ph) || /^\+[1-9]\d{7,14}$/.test(ph));
-  $$("#lines .line").forEach(d => {
-    const amtIn = $("input[data-k=amount]", d), prIn = $("input[data-k=price]", d);
-    const amt = Number(amtIn.value.replace(/\D/g, ""));
-    let amtOK = isFinite(amt) && amt >= a.minBid;
-    let amtMsg = "Minimum is TZS " + fmtTZS(a.minBid);
-    if(amtOK && a.multiple && amt % a.multiple !== 0){ amtOK = false; amtMsg = "Must be a multiple of TZS " + fmtTZS(a.multiple); }
-    need(amtIn, amtOK, amtMsg);
-    if($("select[data-k=type]", d).value === "Competitive"){
-      const pr = Number(prIn.value);
-      let prOK = /^\d+(\.\d{1,4})?$/.test(prIn.value) && pr >= a.priceMin && pr <= a.priceMax;
-      need(prIn, prOK, "Between " + a.priceMin + " and " + a.priceMax + ", max 4 decimals");
-    } else setInvalid(prIn, false);
-  });
-  if(ok && a.maxNonComp > 0){
-    const nc = readLines().filter(L => L.type === "Non-competitive")
-      .reduce((s, L) => s + Number(L.amount || 0), 0);
-    if(nc > a.maxNonComp){
-      ok = false;
-      showSubmitErr("Non-competitive total TZS " + fmtTZS(nc) + " exceeds this auction's cap of TZS " + fmtTZS(a.maxNonComp) + ".");
-    }
-  }
-  return ok;
+function radioVal(name){ const r = $(`input[name="${name}"]:checked`); return r ? r.value : ""; }
+function syncCleanPrice(){
+  const clean = radioVal("priceType") === "Clean Price";
+  const f = $("#f-cleanPrice");
+  f.style.display = clean ? "" : "none";
+  if(!clean){ $("#cleanPrice").value = ""; setInvalid($("#cleanPrice"), false); }
 }
-function showSubmitErr(msg){
-  const el = $("#submit-err"); el.style.display = "block";
-  el.innerHTML = "<b>Not recorded:</b> " + esc(msg);
-  el.scrollIntoView({ block: "center", behavior: "smooth" });
+
+/* ════════ validation + payload ════════ */
+function validate(){
+  const a = state.auction; if(!a) return false;
+  let ok = true;
+  const need = (inp, good) => { ok = setInvalid(inp, !good) && ok; };
+  need($("#investorNames"), $("#investorNames").value.trim().length > 1);
+  need($("#nature-radios"), !!radioVal("nature"));
+  const acct = $("#securitiesAccount").value.trim().toUpperCase();
+  need($("#securitiesAccount"), /^(BOTCDSB|BOTCDSCORU)[A-Z0-9]{2,20}$/.test(acct));
+  if(a.tenors.length) need($("#tenorSel"), !!$("#tenorSel").value);
+  const amt = Number($("#faceValue").value.replace(/\D/g, ""));
+  let faceOK = /^\d+$/.test($("#faceValue").value.replace(/\D/g, "")) && amt >= a.minBid;
+  $("#face-err").textContent = "Minimum is TZS " + fmtTZS(a.minBid);
+  if(faceOK && a.multiple && amt % a.multiple !== 0){ faceOK = false;
+    $("#face-err").textContent = "Must be a multiple of TZS " + fmtTZS(a.multiple); }
+  need($("#faceValue"), faceOK);
+  const pt = radioVal("priceType");
+  need($("#price-radios"), !!pt);
+  if(pt === "Clean Price"){
+    const v = $("#cleanPrice").value.trim();
+    let priceOK = /^\d+(\.\d{1,4})?$/.test(v) && Number(v) >= a.priceMin && Number(v) <= a.priceMax;
+    $("#clean-err").textContent = "Between " + a.priceMin + " and " + a.priceMax + ", max 4 decimals";
+    need($("#cleanPrice"), priceOK);
+  }
+  need($("#accountToDebit"), /^\d{10,16}$/.test($("#accountToDebit").value.trim()));
+  need($("#branch"), !!$("#branch").value.trim());
+  need($("#responsible"), !!$("#responsible").value.trim());
+  const ce = $("#clientEmail").value.trim();
+  need($("#clientEmail"), !ce || emailOk(ce));
+  return ok;
 }
 function newSubmitId(){
   try{ return crypto.randomUUID().replace(/-/g, ""); }
@@ -460,16 +424,25 @@ function newSubmitId(){
 }
 function buildPayload(){
   return {
-    action: "bid", token: state.token, staffId: state.staff.staffId,
-    auctionNo: state.auction.auctionNo, submitId: newSubmitId(),
-    clientName: $("#clientName").value.trim(),
-    clientCDS: ($("#cdsPending").checked ? "PENDING:" : "") + $("#clientCDS").value.trim(),
-    instructionRef: $("#instructionRef").value.trim(),
-    fundingAccount: $("#fundingAccount").value.trim(),
-    clientPhone: $("#clientPhone").value.replace(/\s/g, ""),
-    remarks: $("#remarks").value.trim(),
-    lines: readLines(),
+    action: "bid", token: state.token, auctionNo: state.auction.auctionNo,
+    submitId: newSubmitId(),
+    investorNames: $("#investorNames").value.trim(),
+    nature: radioVal("nature"),
+    securitiesAccount: $("#securitiesAccount").value.trim().toUpperCase(),
+    tenor: $("#tenorSel").value,
+    faceValue: $("#faceValue").value.replace(/\D/g, ""),
+    priceType: radioVal("priceType"),
+    cleanPrice: $("#cleanPrice").value.trim(),
+    accountToDebit: $("#accountToDebit").value.trim(),
+    branch: $("#branch").value.trim(),
+    responsible: $("#responsible").value.trim(),
+    clientEmail: $("#clientEmail").value.trim(),
   };
+}
+function showSubmitErr(msg){
+  const el = $("#submit-err"); el.style.display = "block";
+  el.innerHTML = "<b>Not recorded:</b> " + esc(msg);
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 /* ════════ review + submit ════════ */
@@ -478,21 +451,22 @@ $("#btn-review").addEventListener("click", () => {
   if(!auctionOpen()){ tickCutoff(); return; }
   if(!validate()){ focusFirstInvalid(); return; }
   const p = buildPayload(); state.lastPayload = p;
-  const hasTenors = (state.auction.tenors || []).length > 0;
-  const consider = L => L.type === "Competitive" ? Math.round(Number(L.amount) * Number(L.price)) / 100 : 0;
-  const totalPayable = p.lines.reduce((s, L) => s + consider(L), 0);
+  const clean = p.priceType === "Clean Price";
+  const consider = clean ? Math.round(Number(p.faceValue) * Number(p.cleanPrice)) / 100 : 0;
   const rows = [
-    ["Auction", esc(p.auctionNo) + " · " + esc(state.auction.security)],
-    ["Client", esc(p.clientName)],
-    ["CDS account", esc(p.clientCDS)],
-    ["Funding account", esc(p.fundingAccount)],
-    ["Instruction ref.", esc(p.instructionRef)],
-    ...p.lines.map((L, i) => ["Line " + (i + 1) + (hasTenors ? " · " + esc(L.tenor) + "d" : ""),
-      "TZS " + fmtTZS(L.amount) + (L.type === "Competitive"
-        ? " @ " + esc(L.price) + " ≈ TZS " + fmtTZS2(consider(L))
-        : " · Non-competitive")]),
-    ...(totalPayable ? [["Payable (approx.)", "TZS " + fmtTZS2(totalPayable)]] : []),
-    ["Entered by", esc(state.staff.name) + " (" + esc(state.staff.staffId) + ")"],
+    ["Auction", "AUCTION " + esc(p.auctionNo) + " — " + esc(state.auction.security)],
+    ...(state.auction.tenors.length ? [["Tenor", esc(p.tenor) + " days"]] : []),
+    ["Investor", esc(p.investorNames)],
+    ["Nature of investor", esc(p.nature)],
+    ["Securities account", esc(p.securitiesAccount)],
+    ["Face value", "TZS " + fmtTZS(p.faceValue)],
+    ["Price", esc(p.priceType) + (clean ? " @ " + esc(p.cleanPrice) : "")],
+    ...(clean ? [["Consideration (approx.)", "TZS " + fmtTZS2(consider)]] : []),
+    ["Account to debit", esc(p.accountToDebit)],
+    ["Branch", esc(p.branch)],
+    ["Responsible person", esc(p.responsible)],
+    ["Client e-mail", esc(p.clientEmail) || "—"],
+    ["Entered by", esc(state.staff.name) + " · " + esc(state.staff.email)],
   ];
   $("#rv").innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("");
   $("#dlg").showModal();
@@ -521,33 +495,36 @@ $("#dlg-submit").addEventListener("click", async () => {
   $("#dlg").close();
   const p = state.lastPayload;
   $("#done-ref").textContent = result.ref || "";
-  $("#done-sum").textContent = p.lines.length + " bid line(s) recorded for " + p.clientName +
-    " · auction " + p.auctionNo + (result.at ? " · received " + result.at + " EAT" : "") + ".";
+  $("#done-sum").textContent = "Bid for " + p.investorNames + " · auction " + p.auctionNo +
+    (result.at ? " · received " + result.at + " EAT" : "") + ".";
   show("v-done");
 });
 $("#btn-another").addEventListener("click", () => {
-  ["clientName","clientCDS","fundingAccount","clientPhone","remarks","instructionRef"].forEach(id => $("#" + id).value = "");
-  $("#cdsPending").checked = false;
+  ["investorNames","securitiesAccount","faceValue","cleanPrice","accountToDebit","clientEmail"].forEach(id => $("#" + id).value = "");
+  $$("#nature-radios input, #price-radios input").forEach(r => { r.checked = false; r.closest("label").classList.remove("sel"); });
+  syncCleanPrice();
+  $("#branch").value = state.staff.branch || "";
+  $("#responsible").value = state.staff.name || "";
   $("#submit-err").style.display = "none";
-  $("#lines").textContent = ""; $("#lines").append(lineBlock(0)); renumber();
-  const n = $("#closed-note"); n.className = "note warn"; n.style.display = "none";
   show("v-portal"); loadAuction();
 });
 
 /* ════════ login/logout ════════ */
 async function login(){
-  const idOK = setInvalid($("#staffId"), !$("#staffId").value.trim());
-  const pinOK = setInvalid($("#staffPin"), !$("#staffPin").value.trim());
-  if(!idOK || !pinOK) return;
+  const email = $("#loginEmail").value.trim().toLowerCase();
+  const staffNo = $("#loginStaffNo").value.trim();
+  const eOK = setInvalid($("#loginEmail"), !staffEmailOk(email));
+  const nOK = setInvalid($("#loginStaffNo"), !/^\d{1,5}$/.test(staffNo));
+  if(!eOK || !nOK) return;
   const btn = $("#btn-login"); btn.disabled = true; btn.textContent = "Signing in…";
   $("#login-err").style.display = "none";
   try{
-    const j = await api({ action: "login", staffId: $("#staffId").value.trim(), pin: $("#staffPin").value.trim() });
+    const j = await api({ action: "login", email: email, staffNo: staffNo });
     if(!j.ok) throw new Error(j.error || "sign-in failed");
     state.token = j.token;
-    state.staff = { staffId: $("#staffId").value.trim(), name: j.name, branch: j.branch };
+    state.staff = { email: email, staffNo: staffNo, name: j.name, branch: j.branch };
     try{ sessionStorage.setItem("bid-session", JSON.stringify({ token: state.token, staff: state.staff })); }catch(e){}
-    $("#staffPin").value = "";
+    $("#loginStaffNo").value = "";
     enterPortal();
   }catch(e){
     $("#login-err").style.display = "block";
@@ -556,9 +533,10 @@ async function login(){
 }
 function enterPortal(){
   $("#staff-name").textContent = state.staff.name;
-  $("#staff-branch").textContent = state.staff.branch;
+  $("#staff-email").textContent = state.staff.email;
   $("#staffbar").style.display = "flex";
-  if(!$$("#lines .line").length){ $("#lines").append(lineBlock(0)); renumber(); }
+  if(!$("#branch").value) $("#branch").value = state.staff.branch || "";
+  if(!$("#responsible").value) $("#responsible").value = state.staff.name || "";
   if(!state._r) state._r = setInterval(() => {
     if($("#v-portal").classList.contains("active") && !document.hidden && !$("#dlg").open) loadAuction();
   }, 120000);
@@ -571,13 +549,23 @@ function logout(){
   show("v-login");
 }
 $("#btn-login").addEventListener("click", login);
-$("#staffPin").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
+$("#loginStaffNo").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
 $("#btn-logout").addEventListener("click", logout);
 
 /* ════════ init ════════ */
 (function init(){
+  bindRadios("nature-radios"); bindRadios("price-radios");
+  $("#loginStaffNo").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 5); });
+  $("#faceValue").addEventListener("input", e => {
+    const d = e.target.value.replace(/\D/g, "").slice(0, 13);
+    e.target.value = d ? fmtTZS(d) : "";
+  });
+  $("#cleanPrice").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
+  });
+  $("#accountToDebit").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 16); });
   if(DEMO){
-    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with staff ID <b>1001</b>, PIN <b>1234</b> to preview; submitted bids go nowhere. The admin connects the live backend in CONFIG.API_URL.</div>';
+    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sign in with any @' + STAFF_DOMAIN + ' e-mail and staff number <b>10001</b> to preview; submitted bids go nowhere. The admin connects the live backend in CONFIG.API_URL.</div>';
   }
   try{
     const s = JSON.parse(sessionStorage.getItem("bid-session") || "null");
