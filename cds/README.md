@@ -142,11 +142,16 @@ A companion **staff-only portal** for entering client bids in BOT auctions
 (modeled on **CDS/FORM/03**: up to 4 bid lines, face value + price per 100 at
 4 decimals). One Google Sheet drives it, via `backend/bids-apps-script.gs`:
 
-- **Staff tab** — Email / Name / Branch / StaffNumber / Active / Admin. Staff
-  sign in with their `@crdbbank.co.tz` e-mail plus their staff number
-  (digits, ≤5). Login is verified *server-side* and issues a same-day token;
-  bids without a valid token are rejected by the server, so only listed staff
-  can submit. `Admin = YES` additionally unlocks the admin portal.
+- **Staff tab** — Email / Name / Branch / StaffNumber / Active / Admin /
+  AdminPin. Staff sign in with their `@crdbbank.co.tz` e-mail plus their
+  staff number (digits, ≤5). Login is verified *server-side* and issues a
+  same-day token; bids without a valid token are rejected by the server, so
+  only listed staff can submit. `Admin = YES` additionally unlocks the admin
+  portal — and **give every admin a long `AdminPin`**: the admin portal then
+  demands it at sign-in, so a guessable staff number alone can never open
+  the client register. `setup()` seeds one **inactive** sample row as a
+  template (its details are public in this repo — replace it with real staff
+  and leave it `Active = NO` or delete it).
 - **Auctions tab** — one row per auction (number, security, coupon, ISIN,
   dates, min bid, multiple, price band). The `Active` column is the admin
   switch: `YES` = open, `CLOSED` = staff see a thank-you note that the
@@ -171,7 +176,9 @@ digits, client e-mail required, deadline respected.
 A companion **admin-only portal** on the same backend (same `/exec` URL in
 its `CONFIG.API_URL`). Sign-in is the same staff e-mail + staff number, but
 the server additionally requires `Admin = YES` on the Staff tab — ordinary
-staff are refused. Two tabs:
+staff are refused — and, when the row has an `AdminPin`, that PIN as well
+(the field appears automatically). Admin sessions use a separate token
+scope, so a staff-portal session can never call admin endpoints. Two tabs:
 
 - **Bid Reports** — pick any auction; totals at a glance (bids, total face
   value, clean vs WAP split, consideration) above the full register, one row

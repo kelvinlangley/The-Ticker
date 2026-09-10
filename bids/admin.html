@@ -167,6 +167,9 @@
         <div class="f"><label for="loginStaffNo">Staff Number</label>
           <input id="loginStaffNo" inputmode="numeric" autocomplete="off">
           <div class="err">Digits only, up to 5</div></div>
+        <div class="f" id="f-adminpin" style="display:none"><label for="loginAdminPin">Admin PIN</label>
+          <input id="loginAdminPin" type="password" autocomplete="off">
+          <div class="hint">Set in the AdminPin column of the staff list</div></div>
         <div class="note bad" id="login-err" style="display:none"></div>
         <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
         <div class="hint" style="margin-top:12px; font-size:11.5px; color:var(--muted)">Only staff marked as Admin on the staff list can enter. Bid entry happens in the <a href="index.html">staff portal</a>.</div>
@@ -217,7 +220,7 @@
             </div><div class="err">Choose one</div></div>
           <div class="grid2">
             <div class="f"><label for="edNo">Auction number <span class="req">*</span></label>
-              <input id="edNo" autocomplete="off"><div class="hint">e.g. 712 or 711 (Re-open)</div><div class="err">Required</div></div>
+              <input id="edNo" autocomplete="off"><div class="hint">e.g. 712 or 711 (Re-open)</div><div class="err" id="edno-err">Required</div></div>
             <div class="f"><label for="edSec">Security <span class="req">*</span></label>
               <input id="edSec" autocomplete="off"><div class="hint">e.g. 11.25% 10yrs T-Bond</div><div class="err">Required</div></div>
             <div class="f"><label for="edCoupon">Coupon</label><input id="edCoupon" autocomplete="off"><div class="hint">e.g. 11.25% (blank for T-bill)</div></div>
@@ -243,6 +246,7 @@
               <input id="edCutoff" type="datetime-local"><div class="hint">Leave blank = automatically 5:00 PM EAT the day before the auction. Type a time here for a grace period or extension.</div></div>
           </div>
           <div class="f"><label for="edNotes">Notes shown to staff</label><input id="edNotes" autocomplete="off"></div>
+          <div class="note warn" id="ed-conflict" style="display:none"><b>This auction changed elsewhere</b> (another admin or the Sheet) while you were editing. Cancel and reopen it to see the latest before saving over it.</div>
           <div class="note bad" id="ed-err" style="display:none"></div>
           <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap">
             <button type="button" class="btn" id="btn-cancel">Cancel</button>
@@ -283,7 +287,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt
 const fmtTZS = n => Number(n).toLocaleString("en-US");
 const staffEmailOk = v => new RegExp("^[a-z0-9._%+-]+@" + STAFF_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(v);
 
-const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0 };
+const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0, editingNo: "", editingSnap: "" };
 
 /* ════════ demo backend ════════ */
 const demo = {
@@ -333,6 +337,9 @@ function demoApi(body){
     const a = body.auction;
     if(!a.AuctionNo || !a.Security) return { ok:false, error:"Auction number and security are required" };
     const row = Number(body.row) || (Math.max(...demo.auctions.map(x => x.row), 1) + 1);
+    const dup = demo.auctions.find(x => x.row !== row &&
+      String(x.AuctionNo).trim().toUpperCase() === String(a.AuctionNo).trim().toUpperCase());
+    if(dup) return { ok:false, error:"Auction number " + a.AuctionNo + " is already used by another row - use a distinct number" };
     const i = demo.auctions.findIndex(x => x.row === row);
     const rec = { row: row, ...a };
     if(i >= 0) demo.auctions[i] = rec; else demo.auctions.push(rec);
@@ -381,6 +388,12 @@ async function loadData(silent){
     state.auctions = j.auctions || [];
     state.bids = j.bids || [];
     renderAuctionSelect(); renderReport(); renderAucList();
+    // warn if the auction open in the editor was changed elsewhere meanwhile
+    if(state.editingRow && $("#editor").style.display !== "none"){
+      const cur = state.auctions.find(x => x.row === state.editingRow);
+      const changed = !cur || JSON.stringify(cur) !== state.editingSnap;
+      $("#ed-conflict").style.display = changed ? "block" : "none";
+    }
     return true;
   }catch(e){
     if(!silent){
@@ -560,7 +573,7 @@ function renderAucList(){
   if(!state.auctions.length){ el.innerHTML = '<div class="note">No auctions yet — add the first one below.</div>'; return; }
   el.innerHTML = [...state.auctions].reverse().map(a => {
     const s = String(a.Active).toUpperCase();
-    return '<div class="aucrow" data-row="' + a.row + '">' +
+    return '<div class="aucrow" data-row="' + esc(a.row) + '">' +
       '<div><div class="ttl">AUCTION ' + esc(a.AuctionNo) + " — " + esc(a.Security) + badgeFor(a) + "</div>" +
       '<div class="meta">Auction ' + esc(a.AuctionDate || "?") +
       " · deadline " + esc(a.BidCutoff || "auto 5:00 PM day before") + "</div></div>" +
@@ -584,7 +597,8 @@ $("#auc-list").addEventListener("click", async e => {
     : "HIDE auction " + a.AuctionNo + " from staff?";
   if(!confirm(label)) return;
   btn.disabled = true;
-  const j = await api({ action: "adminSetActive", token: state.token, row: row, active: act }).catch(err => ({ ok:false, error: err.message }));
+  const j = await api({ action: "adminSetActive", token: state.token, row: row, active: act,
+    expectAuctionNo: a.AuctionNo }).catch(err => ({ ok:false, error: err.message }));
   btn.disabled = false;
   if(!j.ok){ if(/log in again|expired/i.test(j.error || "")) return sessionExpired(j.error);
     alert("Not changed: " + (j.error || "error")); return; }
@@ -603,6 +617,9 @@ const ED = { Active: null, AuctionNo: "#edNo", Security: "#edSec", Coupon: "#edC
   MaxWapTZS: "#edWap", BidCutoff: "#edCutoff", Notes: "#edNotes" };
 function openEditor(a){
   state.editingRow = a ? a.row : 0;
+  state.editingNo = a ? String(a.AuctionNo) : "";
+  state.editingSnap = a ? JSON.stringify(a) : "";
+  $("#ed-conflict").style.display = "none";
   $("#ed-title").textContent = a ? "Edit Auction " + a.AuctionNo : "New Auction";
   Object.keys(ED).forEach(k => { if(!ED[k]) return;
     let v = a ? (a[k] ?? "") : "";
@@ -617,7 +634,8 @@ function openEditor(a){
   $("#editor").scrollIntoView({ block: "start", behavior: "smooth" });
 }
 $("#btn-newauc").addEventListener("click", () => openEditor(null));
-$("#btn-cancel").addEventListener("click", () => { $("#editor").style.display = "none"; state.editingRow = 0; });
+$("#btn-cancel").addEventListener("click", () => { $("#editor").style.display = "none";
+  state.editingRow = 0; state.editingNo = ""; state.editingSnap = ""; });
 $$("#active-radios input").forEach(inp => inp.addEventListener("change", () => {
   $$("#active-radios label").forEach(l => l.classList.toggle("sel", l.querySelector("input").checked));
   setInvalid($("#active-radios"), false);
@@ -641,7 +659,11 @@ function validateEditor(a){
   let ok = true;
   const need = (sel, good) => { ok = setInvalid($(sel), !good) && ok; };
   need("#active-radios", ["YES","CLOSED","NO"].indexOf(a.Active) >= 0);
-  need("#edNo", !!a.AuctionNo);
+  const dup = state.auctions.find(x => x.row !== state.editingRow &&
+    String(x.AuctionNo).trim().toUpperCase() === a.AuctionNo.trim().toUpperCase());
+  $("#edno-err").textContent = dup
+    ? "Already used by another auction row - make it distinct, e.g. add (Re-open)" : "Required";
+  need("#edNo", !!a.AuctionNo && !dup);
   need("#edSec", !!a.Security);
   need("#edDate", /^\d{4}-\d{2}-\d{2}$/.test(a.AuctionDate));
   need("#edTenors", !a.Tenors || /^\d+(,\d+)*$/.test(a.Tenors));
@@ -662,8 +684,8 @@ $("#btn-save").addEventListener("click", async () => {
     return;
   }
   const btn = $("#btn-save"); btn.disabled = true; btn.textContent = "Saving…";
-  const j = await api({ action: "adminSaveAuction", token: state.token, row: state.editingRow, auction: a })
-    .catch(err => ({ ok:false, error: err.message }));
+  const j = await api({ action: "adminSaveAuction", token: state.token, row: state.editingRow,
+    expectAuctionNo: state.editingNo, auction: a }).catch(err => ({ ok:false, error: err.message }));
   btn.disabled = false; btn.textContent = "Save auction";
   if(!j.ok){
     if(/log in again|expired/i.test(j.error || "")) return sessionExpired(j.error);
@@ -671,7 +693,8 @@ $("#btn-save").addEventListener("click", async () => {
     $("#ed-err").innerHTML = "<b>Not saved.</b> " + esc(j.error || "error");
     return;
   }
-  $("#editor").style.display = "none"; state.editingRow = 0;
+  $("#editor").style.display = "none";
+  state.editingRow = 0; state.editingNo = ""; state.editingSnap = "";
   showOk("Auction " + a.AuctionNo + " saved. Staff portals update within ~2 minutes.");
   await loadData(true);
 });
@@ -700,8 +723,12 @@ async function login(){
   const btn = $("#btn-login"); btn.disabled = true; btn.textContent = "Signing in…";
   $("#login-err").style.display = "none";
   try{
-    const j = await api({ action: "login", email: email, staffNo: staffNo });
-    if(!j.ok) throw new Error(j.error || "sign-in failed");
+    const j = await api({ action: "login", email: email, staffNo: staffNo,
+      wantAdmin: true, adminPin: $("#loginAdminPin").value });
+    if(!j.ok){
+      if(j.pinRequired) $("#f-adminpin").style.display = "";
+      throw new Error(j.error || "sign-in failed");
+    }
     if(!j.admin) throw new Error("This account is not an admin. Ask the desk to mark Admin = YES for you on the staff list.");
     state.token = j.token;
     state.staff = { email: email, name: j.name };
