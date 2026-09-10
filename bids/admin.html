@@ -276,6 +276,7 @@ const STAFF_DOMAIN = "crdbbank.co.tz";
 // ADMIN_EMAILS list in the backend script (bids-apps-script.gs) - keep the
 // two lists identical when admins change.
 const ADMIN_EMAILS = [
+  "kelvin.njelekela@crdbbank.co.tz", // main admin
   "lwitiko.mbilinyi@crdbbank.co.tz",
   "stephanieshambwe@crdbbank.co.tz",
   "mustafa.haji@crdbbank.co.tz",
@@ -432,12 +433,14 @@ function aucLabel(a){
 function renderAuctionSelect(){
   const sel = $("#repAuction"); const cur = sel.value;
   const opts = [...state.auctions].reverse();
-  sel.innerHTML = opts.map(a => '<option value="' + esc(a.AuctionNo) + '">' + esc(aucLabel(a)) + "</option>").join("");
-  if(opts.some(a => String(a.AuctionNo) === cur)) sel.value = cur;
+  sel.innerHTML = opts.map(a => '<option value="' + esc(a.AuctionNo) + '">' + esc(aucLabel(a)) + "</option>").join("") +
+    '<option value="__ALL__">— ALL AUCTIONS (whole register) —</option>';
+  if(cur === "__ALL__" || opts.some(a => String(a.AuctionNo) === cur)) sel.value = cur;
   else { const open = opts.find(a => String(a.Active).toUpperCase() === "YES"); if(open) sel.value = String(open.AuctionNo); }
 }
 function currentBids(){
   const no = $("#repAuction").value;
+  if(no === "__ALL__") return state.bids.slice();
   return state.bids.filter(b => String(b.AuctionNo) === no);
 }
 function repStats(bids){
@@ -547,7 +550,7 @@ function excelRows(bids){
 $("#btn-xlsx").addEventListener("click", () => {
   const bids = currentBids();
   const no = $("#repAuction").value || "auction";
-  const fn = ("AUCTION-" + no + "-bids").replace(/[^\w.-]+/g, "_") + ".xlsx";
+  const fn = (no === "__ALL__" ? "ALL-AUCTIONS-bids" : ("AUCTION-" + no + "-bids").replace(/[^\w.-]+/g, "_")) + ".xlsx";
   saveBlob(xlsxBlob(excelRows(bids), "Bids"), fn);
   announce("Excel report downloaded.");
 });
@@ -555,17 +558,20 @@ $("#btn-xlsx").addEventListener("click", () => {
 /* ════════ PDF (print) ════════ */
 $("#btn-pdf").addEventListener("click", () => {
   const bids = currentBids();
-  const a = state.auctions.slice().reverse().find(x => String(x.AuctionNo) === $("#repAuction").value) || {};
+  const isAll = $("#repAuction").value === "__ALL__";
+  const a = isAll ? {} : (state.auctions.slice().reverse().find(x => String(x.AuctionNo) === $("#repAuction").value) || {});
   const stats = repStats(bids);
   const cols = BID_COLS.filter(c => c !== "SubmitID" && c !== "StaffEmail");
   const heads = BID_HEADS.filter((h,i) => cols.indexOf(BID_COLS[i]) >= 0);
   $("#print-report").innerHTML =
     '<div class="ph"><div class="org">CRDB Bank Plc — Brokerage / Capital Markets</div>' +
     '<div class="doc">Bid Submission Report · Bank of Tanzania Government Securities Auction</div></div>' +
-    "<h2>AUCTION " + esc(a.AuctionNo || "") + " — " + esc(a.Security || "") + "</h2>" +
-    '<div class="meta">Auction date: ' + esc(a.AuctionDate || "—") +
+    (isAll ? "<h2>ALL AUCTIONS — consolidated register</h2>" :
+      "<h2>AUCTION " + esc(a.AuctionNo || "") + " — " + esc(a.Security || "") + "</h2>") +
+    '<div class="meta">' + (isAll ? "Every bid in the register" :
+    "Auction date: " + esc(a.AuctionDate || "—") +
     " · Settlement: " + esc(a.SettlementDate || "(day after auction)") +
-    " · Deadline: " + esc(a.BidCutoff || "(5:00 PM the day before)") +
+    " · Deadline: " + esc(a.BidCutoff || "(5:00 PM the day before)")) +
     " · Generated: " + new Date().toLocaleString("en-GB", { timeZone: "Africa/Dar_es_Salaam" }) + " EAT" +
     " · By: " + esc(state.staff ? state.staff.name + " (" + state.staff.email + ")" : "") + "</div>" +
     "<table><thead><tr><th>#</th>" + heads.map(h => "<th>" + esc(h) + "</th>").join("") + "</tr></thead><tbody>" +
