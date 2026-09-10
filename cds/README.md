@@ -136,6 +136,34 @@ Workspace tenant, for anything beyond a pilot.
 - Drawn/typed signatures are provisional by design — BOT requires wet signatures
   witnessed by the depository participant, which happens at the branch step.
 
+## Staff bid-entry portal (`../bids/`)
+
+A companion **staff-only portal** for entering client bids in BOT auctions
+(modeled on **CDS/FORM/03**: up to 4 bid lines, face value + price per 100 at
+4 decimals). One Google Sheet drives it, via `backend/bids-apps-script.gs`:
+
+- **Staff tab** — StaffID / Name / Branch / PIN / Active. Login is verified
+  *server-side* and issues a same-day token; bids without a valid token are
+  rejected by the server, so only listed staff can submit.
+- **Auctions tab** — one row per auction (number, security, coupon, ISIN,
+  dates, min bid, multiple, price band, bid cutoff). The `Active` column is
+  the admin switch: `YES` = open (auto-closes at `BidCutoff`), `CLOSED` =
+  shown but bidding stopped, `NO` = hidden. Extend/grace = edit `BidCutoff`;
+  next auction = add a row. The server re-checks the live sheet on every
+  submission and portals refresh their auction every 2 minutes.
+- **Bids tab** — one row per bid line with a server timestamp, bid reference,
+  staff identity, client, amounts and prices. File → Download → Excel.
+
+Validation is enforced twice (browser and server): amount ≥ minimum and in
+the configured multiples, price inside the band with ≤4 decimals, CDS/funding
+account formats, competitive vs non-competitive rules, cutoff respected.
+
+Setup mirrors the account form: blank Sheet → paste the script → set
+`SHEET_ID` and a random `TOKEN_SECRET` → Run `setup()` once → deploy as Web
+App (Execute as Me / access: Anyone) → put the `/exec` URL in
+`bids/index.html` `CONFIG.API_URL`. With no URL configured the portal runs in
+demo mode (staff `1001` / PIN `1234`, nothing is sent).
+
 ## Files
 
 - `index.html` — the whole app (no build step, no dependencies; fonts are the only
