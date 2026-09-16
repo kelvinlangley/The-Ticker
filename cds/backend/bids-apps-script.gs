@@ -34,7 +34,9 @@
 //              4-digit AdminPin they must remember - both are then required
 //              on every sign-in. RESET: clear the Password cell; the person
 //              creates a new password (and gets a new PIN) on next sign-in.
-//              5 wrong attempts lock the e-mail for 10 minutes.
+//              5 wrong attempts lock the e-mail for 10 minutes; the lock
+//              clears itself, or the MASTER admin can press "Unlock now" in
+//              the portal's Login Activity tab to clear it immediately.
 //   (Staff)  - STAFF DO NOT NEED REGISTERING. Anyone with an e-mail ending
 //              @crdbbank.co.tz plus a staff number (digits, max 5) can sign
 //              in to the STAFF portal and enter bids - by design, because
@@ -276,7 +278,9 @@ function checkToken(token, scope) {
   return makeToken(email, scope) === token ? email : null;
 }
 
-// Brute-force brake: 5 failures locks an e-mail for 10 minutes.
+// Brute-force brake: 5 failures locks an e-mail for 10 minutes. The counter
+// lives in CacheService and expires on its own; the master admin can also
+// clear it instantly via the adminUnlock action.
 function loginThrottle(email, failed) {
   const cache = CacheService.getScriptCache();
   const key = 'fail:' + email;
@@ -322,6 +326,7 @@ function doPost(e) {
     if (p.action === 'adminSaveAuction') return handleAdminSaveAuction(p);
     if (p.action === 'adminSetActive') return handleAdminSetActive(p);
     if (p.action === 'adminDeleteAuction') return handleAdminDeleteAuction(p);
+    if (p.action === 'adminUnlock') return handleAdminUnlock(p);
     return json({ ok: false, error: 'Unknown action' });
   } catch (err) {
     console.error(err);
@@ -336,12 +341,13 @@ function handleLogin(p) {
   // ── Admin portal: e-mail on the Admins tab + created password + 4-digit
   //    AdminPin. 5 wrong attempts lock the e-mail for 10 minutes. ──
   if (p.wantAdmin) {
-    if (loginThrottle(email)) return json({ ok: false, error: LOCK_MSG });
     ensureTabs(); // guarantees the Admins tab exists and is seeded once
     const row = sheetRows('Admins', ADMIN_COLS).find(a =>
       String(a.Email).trim().toLowerCase() === email &&
       String(a.Active).trim().toUpperCase() === 'YES');
     if (!row) return json({ ok: false, error: NOT_ADMIN_MSG });
+    // lock check AFTER membership, so outsiders cannot probe who is locked
+    if (loginThrottle(email)) return json({ ok: false, error: LOCK_MSG });
     const stored = String(row.Password == null ? '' : row.Password).trim();
     if (!stored) return json({ ok: false, setupRequired: true,
       error: 'First sign-in - create your password below' });
@@ -371,7 +377,6 @@ function handleLogin(p) {
 function handleAdminSetPassword(p) {
   const email = String(p.email || '').trim().toLowerCase();
   if (!staffEmailOk(email)) return json({ ok: false, error: 'Use your CRDB e-mail (…@' + STAFF_DOMAIN + ')' });
-  if (loginThrottle(email)) return json({ ok: false, error: LOCK_MSG });
   const pw = String(p.password || '');
   if (pw.length < 8 || pw.length > 64) return json({ ok: false, error: 'Password must be 8 to 64 characters' });
   if (/^[=+\-@']/.test(pw)) return json({ ok: false, error: 'Password must not start with = + - @ or an apostrophe' });
@@ -391,6 +396,8 @@ function handleAdminSetPassword(p) {
           String(iA >= 0 ? values[i][iA] : 'YES').trim().toUpperCase() === 'YES') { r = i; break; }
     }
     if (r < 0) return json({ ok: false, error: NOT_ADMIN_MSG });
+    // lock check AFTER membership, so outsiders cannot probe who is locked
+    if (loginThrottle(email)) return json({ ok: false, error: LOCK_MSG });
     if (String(values[r][iP] == null ? '' : values[r][iP]).trim())
       return json({ ok: false, error: 'A password already exists for this account. To reset it, the main admin clears the Password cell on the Admins tab - then create a new one here.' });
     const pin = String(Math.floor(1000 + Math.random() * 9000));
@@ -554,8 +561,38 @@ function handleAdminData(p) {
       time: (r.Time instanceof Date) ? Utilities.formatDate(r.Time, TZ, 'yyyy-MM-dd HH:mm:ss') : String(r.Time || ''),
       email: String(r.Email || ''), event: String(r.Event || ''),
     }));
+    // every admin account's live lock state, so the master can unlock people
+    const cache = CacheService.getScriptCache();
+    out.adminStatus = sheetRows('Admins', ADMIN_COLS).map(a => {
+      const em = String(a.Email == null ? '' : a.Email).trim().toLowerCase();
+      const fails = Number(cache.get('fail:' + em) || 0);
+      return { email: em, name: String(a.Name || '').trim() || nameFromEmail(em),
+        active: String(a.Active).trim().toUpperCase() === 'YES',
+        fails: fails, locked: fails >= 5,
+        needsSetup: String(a.Password == null ? '' : a.Password).trim() === '' };
+    }).filter(a => a.email);
   }
   return json(out);
+}
+
+// MASTER admin only: clears another admin's failed-attempt counter so they
+// can sign in again IMMEDIATELY instead of waiting out the 10-minute lock.
+function handleAdminUnlock(p) {
+  const auth = adminAuth(p.token);
+  if (!auth) return json({ ok: false, error: 'Admin session expired - please log in again' });
+  if (auth.email !== MASTER_ADMIN) return json({ ok: false, error: 'Only the master admin can unlock accounts' });
+  const target = String(p.email || '').trim().toLowerCase();
+  if (!staffEmailOk(target)) return json({ ok: false, error: 'Pick which account to unlock' });
+  // helpdesk cap: 4 unlocks per account per hour, so unlock can never be
+  // scripted into switching off the 5-failure brute-force brake entirely
+  const cache = CacheService.getScriptCache();
+  const used = Number(cache.get('unl:' + target) || 0);
+  if (used >= 4) return json({ ok: false,
+    error: 'Unlock limit reached for this account this hour - the 10-minute lock will clear it by itself.' });
+  cache.put('unl:' + target, String(used + 1), 3600);
+  loginThrottle(target, false); // wipes the fail counter = unlocked now
+  logAdmin(auth.email, 'Unlocked ' + target);
+  return json({ ok: true });
 }
 
 // MASTER admin only: removes an auction row entirely. Bids already recorded
