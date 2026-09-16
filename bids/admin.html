@@ -136,7 +136,9 @@
     #print-report .tot{margin-top:10px; font-size:10.5px}
     #print-report .sig{margin-top:26px; display:flex; gap:40px; font-size:10px; color:#444}
     #print-report .sig div{flex:1; border-top:1px solid #888; padding-top:4px}
-    #print-report .pf{margin-top:18px; text-align:center; font-size:9px; color:#666;
+    /* pinned to the bottom-left corner of every printed page, where the
+       browser's http footer used to sit */
+    #print-report .pf{position:fixed; bottom:5mm; left:12mm; font-size:9px; color:#666;
       -webkit-print-color-adjust:exact; print-color-adjust:exact}
   }
 </style>
