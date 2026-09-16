@@ -155,7 +155,9 @@ A companion **staff-only portal** for entering client bids in BOT auctions
   configuration". **First sign-in**: each admin creates their own password
   in the portal; the server stores it in the tab and generates a random
   **4-digit Admin PIN** shown once — both are required at every sign-in.
-  Five wrong attempts lock the e-mail for 10 minutes. **Reset**: clear the
+  Five wrong attempts lock the e-mail for 10 minutes — the lock clears by
+  itself, or the master admin presses **Unlock now** in the portal's Login
+  Activity tab to free the person immediately. **Reset**: clear the
   person's Password cell; on their next sign-in they create a new password
   and receive a new PIN. Passwords sit in the Sheet in clear text so the
   main admin can help people — protect the Sheet itself accordingly.
@@ -202,9 +204,12 @@ staff-portal session can never call admin endpoints. Two tabs:
   ~2 minutes; the Sheet remains the master record and can still be edited
   directly.
 - **Master admin** — the `MASTER_ADMIN` e-mail in the script additionally
-  gets a **Login Activity** tab (every admin sign-in, failed attempt,
-  lockout and password creation — recorded on the `AdminLog` sheet tab,
-  last 200 events shown) and a master-only **Delete** button per auction.
+  gets a **Login Activity** tab: a live **lock-status table** of every
+  admin account (OK / failed attempts / LOCKED, with an **Unlock now**
+  button that clears a lock instantly — no 10-minute wait), above the
+  sign-in trail (every admin sign-in, failed attempt, lockout, unlock and
+  password creation — recorded on the `AdminLog` sheet tab, last 200
+  events shown) — plus a master-only **Delete** button per auction.
   Deleting removes the auction definition only: its recorded bids stay in
   the register and remain downloadable (the report dropdown lists them as
   "deleted · archived bids").

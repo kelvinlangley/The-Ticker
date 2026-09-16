@@ -283,6 +283,13 @@
       <!-- Login activity (master admin only) -->
       <div id="pane-activity" style="display:none">
         <div class="card">
+          <h3>Admin Accounts — Lock Status</h3>
+          <div class="hint" style="margin-bottom:12px">5 wrong sign-in attempts lock an account for 10 minutes. A lock clears by itself when the time is up — or press <b>Unlock now</b> to free that person immediately so they can try again.</div>
+          <div class="tablewrap"><table class="report" id="lock-table"></table></div>
+          <div id="lock-empty" class="note" style="display:none">No admin accounts found yet — they appear here after the first sign-in reaches the backend.</div>
+          <div id="lock-ok" class="note" style="display:none"></div>
+        </div>
+        <div class="card">
           <h3>Admin Login Activity</h3>
           <div class="hint" style="margin-bottom:12px">Every admin sign-in, failed attempt, lockout and password creation — newest first, last 200 events. Only you (the master admin) can see this.</div>
           <div class="tablewrap"><table class="report" id="act-table"></table></div>
@@ -321,6 +328,7 @@ const ADMIN_EMAILS = [
   "patrick.james@crdbbank.co.tz",
 ];
 const NOT_ADMIN_MSG = "User not defined as admin - please contact the system admin for configuration.";
+const LOCK_MSG = "Too many attempts - locked for 10 minutes";
 
 const BID_COLS = ["Received","BidRef","AuctionNo","Security","StaffEmail","StaffNumber",
   "InvestorFullNames","NatureOfInvestor","SecuritiesAccountNumber","FaceValueTZS","PriceType",
@@ -338,11 +346,14 @@ const fmtTZS = n => Number(n).toLocaleString("en-US");
 const staffEmailOk = v => new RegExp("^[a-z0-9._%+-]+@" + STAFF_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(v);
 
 const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0, editingNo: "", editingSnap: "",
-  master: false, logins: [], secManual: false };
+  master: false, logins: [], adminStatus: [], secManual: false };
 
 /* ════════ demo backend ════════ */
 const demo = {
   creds: {}, // demo password/PIN store: email -> { pw, pin }
+  fails: {}, // demo failed-attempt counter: email -> count (5 = locked)
+  lockedAt: {}, // email -> ms timestamp of the 5th failure (lock expires after 10 min, like live)
+  unlocks: {}, // email -> unlock presses (live caps at 4 per hour)
   lastEmail: "", log: [],
   auctions: [
     { row: 2, Active: "NO", AuctionNo: "709", Security: "12.10% 15yrs T-Bond", Coupon: "12.10%",
@@ -377,6 +388,12 @@ const demo = {
       ClientEmail: "bakari@example.com", Tenor: "15 years", SubmitID: "demo4" },
   ],
 };
+// Mirrors the live 10-minute lock expiry: a demo lock frees itself too.
+function demoLocked(em){
+  if((demo.fails[em] || 0) < 5) return false;
+  if(Date.now() - (demo.lockedAt[em] || 0) >= 600000){ demo.fails[em] = 0; delete demo.lockedAt[em]; return false; }
+  return true;
+}
 function demoApi(body){
   const demoName = e => String(e).split("@")[0].split(/[._]/)
     .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -386,17 +403,23 @@ function demoApi(body){
     if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
     const c = demo.creds[em];
     const demoLog = ev => demo.log.push({ time: new Date().toLocaleString("sv-SE", { timeZone: "Africa/Dar_es_Salaam" }), email: em, event: ev });
+    if(demoLocked(em)) return { ok:false, error: LOCK_MSG };
     if(!c) return { ok:false, setupRequired: true, error: "First sign-in - create your password below" };
     if(String(body.password || "") !== c.pw || String(body.adminPin || "").trim() !== c.pin){
-      demoLog("Failed sign-in attempt");
-      return { ok:false, error: "Wrong password or Admin PIN" };
+      demo.fails[em] = (demo.fails[em] || 0) + 1;
+      const locked = demo.fails[em] >= 5;
+      if(locked) demo.lockedAt[em] = Date.now();
+      demoLog(locked ? "Locked out (5 failures)" : "Failed sign-in attempt");
+      return { ok:false, error: locked ? LOCK_MSG : "Wrong password or Admin PIN" };
     }
+    demo.fails[em] = 0;
     demo.lastEmail = em; demoLog("Signed in");
     return { ok:true, token:"demo", name: demoName(em), admin: true };
   }
   if(body.action === "adminSetPassword"){
     const em = String(body.email || "").trim().toLowerCase();
     if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
+    if(demoLocked(em)) return { ok:false, error: LOCK_MSG };
     if(demo.creds[em]) return { ok:false, error: "A password already exists for this account. To reset it, the main admin clears the Password cell on the Admins tab - then create a new one here." };
     const pw = String(body.password || "");
     if(pw.length < 8 || pw.length > 64) return { ok:false, error: "Password must be 8 to 64 characters" };
@@ -408,8 +431,21 @@ function demoApi(body){
   }
   if(body.action === "adminData"){
     const master = demo.lastEmail === ADMIN_EMAILS[0];
+    const status = master ? ADMIN_EMAILS.map(em => { const locked = demoLocked(em);
+      return { email: em, name: demoName(em), active: true,
+        fails: demo.fails[em] || 0, locked: locked, needsSetup: !demo.creds[em] }; }) : undefined;
     return { ok:true, auctions: demo.auctions.map(a => ({...a})), bids: demo.bids.map(b => ({...b})),
-      master: master, logins: master ? demo.log.slice(-200) : undefined };
+      master: master, logins: master ? demo.log.slice(-200) : undefined, adminStatus: status };
+  }
+  if(body.action === "adminUnlock"){
+    if(demo.lastEmail !== ADMIN_EMAILS[0]) return { ok:false, error: "Only the master admin can unlock accounts" };
+    const t = String(body.email || "").trim().toLowerCase();
+    if(!staffEmailOk(t)) return { ok:false, error: "Pick which account to unlock" };
+    demo.unlocks[t] = (demo.unlocks[t] || 0) + 1;
+    if(demo.unlocks[t] > 4) return { ok:false, error: "Unlock limit reached for this account this hour - the 10-minute lock will clear it by itself." };
+    demo.fails[t] = 0; delete demo.lockedAt[t];
+    demo.log.push({ time: new Date().toLocaleString("sv-SE", { timeZone: "Africa/Dar_es_Salaam" }), email: demo.lastEmail, event: "Unlocked " + t });
+    return { ok:true };
   }
   if(body.action === "adminDeleteAuction"){
     if(demo.lastEmail !== ADMIN_EMAILS[0]) return { ok:false, error: "Only the master admin can delete auctions" };
@@ -473,6 +509,7 @@ async function loadData(silent){
     state.auctions = j.auctions || [];
     state.bids = j.bids || [];
     state.master = !!j.master; state.logins = j.logins || [];
+    state.adminStatus = j.adminStatus || [];
     $("#tab-activity").style.display = state.master ? "" : "none";
     renderAuctionSelect(); renderReport(); renderAucList(); renderActivity();
     // warn if the auction open in the editor was changed elsewhere meanwhile
@@ -513,6 +550,7 @@ function renderAuctionSelect(){
 }
 function renderActivity(){
   if(!state.master) return;
+  renderLockStatus();
   const rows = [...state.logins].reverse();
   const tbl = $("#act-table");
   if(!rows.length){ tbl.innerHTML = ""; $("#act-empty").style.display = "block"; return; }
@@ -521,6 +559,51 @@ function renderActivity(){
     rows.map(l => "<tr><td>" + esc(l.time) + '</td><td class="t">' + esc(l.email) +
       '</td><td class="t">' + esc(l.event) + "</td></tr>").join("") + "</tbody>";
 }
+// Master-only: one row per admin account with its live lock state and an
+// "Unlock now" button — so nobody has to wait out the 10 minutes.
+function renderLockStatus(){
+  const tbl = $("#lock-table");
+  const rows = state.adminStatus;
+  if(!rows.length){ tbl.innerHTML = ""; $("#lock-empty").style.display = "block"; return; }
+  $("#lock-empty").style.display = "none";
+  tbl.innerHTML = "<thead><tr><th>Admin</th><th>Status</th><th></th></tr></thead><tbody>" +
+    rows.map(a => {
+      const st = a.locked ? '<b style="color:var(--bad)">🔒 LOCKED</b>'
+        : a.fails > 0 ? esc(a.fails + " failed attempt" + (a.fails === 1 ? "" : "s"))
+        : a.needsSetup ? '<span class="hint">hasn’t created a password yet</span>'
+        : "OK";
+      const off = a.active ? "" : ' <span class="hint">· switched off (Active ≠ YES)</span>';
+      const btn = a.fails > 0
+        ? '<button type="button" class="btn small" data-unlock="' + esc(a.email) + '">Unlock now</button>' : "";
+      return '<tr><td class="t">' + esc(a.email) + "<br><span class=\"hint\">" + esc(a.name) + "</span></td><td>" +
+        st + off + "</td><td>" + btn + "</td></tr>";
+    }).join("") + "</tbody>";
+}
+$("#lock-table").addEventListener("click", async e => {
+  const btn = e.target.closest("button[data-unlock]"); if(!btn) return;
+  const email = btn.dataset.unlock;
+  btn.disabled = true; btn.textContent = "Unlocking…";
+  const j = await api({ action: "adminUnlock", token: state.token, email: email })
+    .catch(err => ({ ok:false, error: err.message }));
+  if(!j.ok){
+    btn.disabled = false; btn.textContent = "Unlock now";
+    if(/log in again|expired/i.test(j.error || "")) return sessionExpired(j.error);
+    alert("Not unlocked: " + (j.error || "error")); return;
+  }
+  // reflect the unlock at once from known state (also un-sticks the button
+  // even if the silent refresh below fails on a flaky connection)
+  const row = state.adminStatus.find(a => a.email === email);
+  const stillOff = row && !row.active;
+  if(row){ row.fails = 0; row.locked = false; }
+  renderLockStatus();
+  const el = $("#lock-ok"); el.style.display = "block";
+  el.innerHTML = "<b>Unlocked.</b> " + esc(email) + (stillOff
+    ? " is no longer locked, but the account is still switched off - set its Active cell to YES on the Admins tab before they can sign in."
+    : " can sign in again right now.");
+  clearTimeout(renderLockStatus._t); renderLockStatus._t = setTimeout(() => { el.style.display = "none"; }, 8000);
+  announce(email + " unlocked");
+  await loadData(true);
+});
 function currentBids(){
   const no = $("#repAuction").value;
   if(no === "__ALL__") return state.bids.slice();
