@@ -29,11 +29,20 @@
 //              the system admin. It is seeded automatically from the
 //              ADMIN_EMAILS list below the first time; after that, add or
 //              remove admins by editing the tab - no redeploy needed.
-//              FIRST SIGN-IN: the admin creates their own password in the
-//              portal; the server stores it here and generates a random
-//              4-digit AdminPin they must remember - both are then required
-//              on every sign-in. RESET: clear the Password cell; the person
-//              creates a new password (and gets a new PIN) on next sign-in.
+//              FIRST SIGN-IN: the portal first E-MAILS a 6-digit
+//              verification code to the admin's address (proof they own the
+//              mailbox - without it anyone who knew the address could claim
+//              the account); with the code they create their own password;
+//              the server stores it here and generates a random 4-digit
+//              AdminPin they must remember - both are then required on
+//              every sign-in. RESET: clear the Password cell; the person
+//              repeats the code + new password flow on next sign-in.
+//              NOTE: sending e-mail needs a one-time permission. ORDER
+//              MATTERS after pasting this version: FIRST Run setup() from
+//              the editor and approve the "Send email as you" prompt, THEN
+//              Deploy > Manage deployments > Edit > New version. Deploying
+//              before approving leaves the whole portal refusing every
+//              request until the permission is granted.
 //              5 wrong attempts lock the e-mail for 10 minutes; the lock
 //              clears itself, or the MASTER admin can press "Unlock now" in
 //              the portal's Login Activity tab to clear it immediately.
@@ -52,12 +61,17 @@
 //   POST {action:"login"}           -> staff: e-mail format + staff number;
 //                                      admin (wantAdmin): e-mail + password
 //                                      + 4-digit AdminPin (rate-limited)
-//   POST {action:"adminSetPassword"}-> first sign-in: stores the password,
-//                                      generates and returns the AdminPin
+//   POST {action:"adminSendCode"}   -> first sign-in step 1: e-mails a
+//                                      6-digit verification code (3/hour)
+//   POST {action:"adminSetPassword"}-> first sign-in step 2: with the code,
+//                                      stores the password, generates and
+//                                      returns the AdminPin
 //   POST {action:"bid"}             -> verifies token, re-validates
 //                                      everything, appends under a lock
 //
-// After ANY code change: Deploy > Manage deployments > Edit > New version.
+// After ANY code change: Run setup() once first if the paste added new
+// permissions (approve the prompt), then Deploy > Manage deployments >
+// Edit > New version.
 
 const SHEET_ID = 'PASTE_SHEET_ID_HERE';
 const TOKEN_SECRET = 'CHANGE_ME_TO_ANY_LONG_RANDOM_TEXT';
@@ -327,6 +341,7 @@ function doPost(e) {
     if (p.action === 'adminSetActive') return handleAdminSetActive(p);
     if (p.action === 'adminDeleteAuction') return handleAdminDeleteAuction(p);
     if (p.action === 'adminUnlock') return handleAdminUnlock(p);
+    if (p.action === 'adminSendCode') return handleAdminSendCode(p);
     return json({ ok: false, error: 'Unknown action' });
   } catch (err) {
     console.error(err);
@@ -371,9 +386,49 @@ function handleLogin(p) {
     branch: '', staffNo: staffNo, admin: false });
 }
 
-// First admin sign-in: stores the password they created (only while the
-// Password cell is EMPTY - reset = main admin clears the cell) and generates
-// the 4-digit AdminPin they must remember for every future sign-in.
+// Step 1 of first sign-in: e-mail a 6-digit verification code to the
+// admin's own mailbox. Only they can read it, which is the proof of
+// identity - without this, anyone who knew a listed address could claim a
+// not-yet-registered admin account. Max 3 sends per address per hour; the
+// code lives 10 minutes in the cache and is never written to the Sheet.
+function handleAdminSendCode(p) {
+  const email = String(p.email || '').trim().toLowerCase();
+  if (!staffEmailOk(email)) return json({ ok: false, error: 'Use your CRDB e-mail (…@' + STAFF_DOMAIN + ')' });
+  ensureTabs();
+  const row = sheetRows('Admins', ADMIN_COLS).find(a =>
+    String(a.Email).trim().toLowerCase() === email &&
+    String(a.Active).trim().toUpperCase() === 'YES');
+  if (!row) return json({ ok: false, error: NOT_ADMIN_MSG });
+  if (String(row.Password == null ? '' : row.Password).trim())
+    return json({ ok: false, error: 'This account is already set up - sign in with your password and Admin PIN.' });
+  const cache = CacheService.getScriptCache();
+  const sends = Number(cache.get('vsend:' + email) || 0);
+  if (sends >= 3) return json({ ok: false, error: 'Code limit reached for this hour - try again later.' });
+  const all = Number(cache.get('vsend:all') || 0); // global brake protects the owner's daily mail quota
+  if (all >= 15) return json({ ok: false, error: 'The code service is busy - try again later.' });
+  // 6 digits derived from HMAC bytes (not Math.random)
+  const bytes = Utilities.computeHmacSha256Signature(Utilities.getUuid(), TOKEN_SECRET);
+  let n = 0;
+  for (let i = 0; i < 4; i++) n = n * 256 + (bytes[i] & 255);
+  const code = String(100000 + (n % 900000));
+  // send FIRST: a failed send (mail quota, transient error) must not burn
+  // the hourly allowance or cache a code nobody received
+  MailApp.sendEmail(email, 'CRDB bid portal - your verification code',
+    'Your admin sign-up verification code is: ' + code + '\n\n' +
+    'It expires in 10 minutes. Type it in the admin portal together with the password you are creating.\n' +
+    'If you did not request this, simply ignore this e-mail - nobody can proceed without the code.');
+  cache.put('vsend:' + email, String(sends + 1), 3600);
+  cache.put('vsend:all', String(all + 1), 3600);
+  cache.put('vcode:' + email, code, 600);
+  cache.remove('vtry:' + email);
+  logAdmin(email, 'Verification code e-mailed');
+  return json({ ok: true, sent: true });
+}
+
+// Step 2 of first sign-in: with the e-mailed code, stores the password they
+// created (only while the Password cell is EMPTY - reset = main admin clears
+// the cell) and generates the 4-digit AdminPin they must remember for every
+// future sign-in.
 function handleAdminSetPassword(p) {
   const email = String(p.email || '').trim().toLowerCase();
   if (!staffEmailOk(email)) return json({ ok: false, error: 'Use your CRDB e-mail (…@' + STAFF_DOMAIN + ')' });
@@ -400,6 +455,22 @@ function handleAdminSetPassword(p) {
     if (loginThrottle(email)) return json({ ok: false, error: LOCK_MSG });
     if (String(values[r][iP] == null ? '' : values[r][iP]).trim())
       return json({ ok: false, error: 'A password already exists for this account. To reset it, the main admin clears the Password cell on the Admins tab - then create a new one here.' });
+    // the e-mailed verification code proves the caller owns this mailbox
+    const cache = CacheService.getScriptCache();
+    const want = cache.get('vcode:' + email);
+    if (!want) return json({ ok: false, needCode: true,
+      error: 'E-mail yourself a verification code first - codes expire after 10 minutes.' });
+    const tries = Number(cache.get('vtry:' + email) || 0);
+    if (tries >= 5) {
+      cache.remove('vcode:' + email);
+      return json({ ok: false, needCode: true, error: 'Too many wrong codes - request a new code.' });
+    }
+    if (String(p.code || '').trim() !== want) {
+      cache.put('vtry:' + email, String(tries + 1), 600);
+      logAdmin(email, 'Wrong verification code');
+      return json({ ok: false, error: 'Wrong verification code - check the e-mail we sent you.' });
+    }
+    cache.remove('vcode:' + email); cache.remove('vtry:' + email);
     const pin = String(Math.floor(1000 + Math.random() * 9000));
     sh.getRange(r + 1, iP + 1).setValue(pw);
     sh.getRange(r + 1, iPin + 1).setValue(pin);

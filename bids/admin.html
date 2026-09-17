@@ -183,7 +183,13 @@
           <button type="button" class="btn primary" id="btn-login" style="width:100%">Sign in</button>
         </div>
         <div id="login-setup" style="display:none">
-          <div class="note"><b>First sign-in — create your password.</b> You will then receive your personal 4-digit Admin PIN. Both are needed every time you sign in.</div>
+          <div class="note"><b>First sign-in — confirm it's really you, then create your password.</b> Press the button below and we e-mail a 6-digit verification code to your address; type it here with your new password. You will then receive your personal 4-digit Admin PIN. Password + PIN are needed every time you sign in.</div>
+          <button type="button" class="btn" id="btn-sendcode" style="width:100%; margin-bottom:12px">📧 E-mail me a verification code</button>
+          <div class="note" id="code-sent" style="display:none"></div>
+          <div class="f"><label for="setupCode">Verification code</label>
+            <input id="setupCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            <div class="hint">The 6-digit code from the e-mail — valid 10 minutes. Check the spam folder too.</div>
+            <div class="err">Enter the 6-digit code from the e-mail</div></div>
           <div class="f"><label for="newPassword">Create password</label>
             <input id="newPassword" type="password" autocomplete="new-password">
             <div class="hint">8 to 64 characters</div>
@@ -358,6 +364,7 @@ const state = { token: null, staff: null, auctions: [], bids: [], editingRow: 0,
 /* ════════ demo backend ════════ */
 const demo = {
   creds: {}, // demo password/PIN store: email -> { pw, pin }
+  vcode: {}, // demo verification codes: email -> 6-digit code
   fails: {}, // demo failed-attempt counter: email -> count (5 = locked)
   lockedAt: {}, // email -> ms timestamp of the 5th failure (lock expires after 10 min, like live)
   unlocks: {}, // email -> unlock presses (live caps at 4 per hour)
@@ -423,13 +430,24 @@ function demoApi(body){
     demo.lastEmail = em; demoLog("Signed in");
     return { ok:true, token:"demo", name: demoName(em), admin: true };
   }
+  if(body.action === "adminSendCode"){
+    const em = String(body.email || "").trim().toLowerCase();
+    if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
+    if(demo.creds[em]) return { ok:false, error: "This account is already set up - sign in with your password and Admin PIN." };
+    demo.vcode[em] = String(100000 + Math.floor(Math.random() * 900000));
+    // live: the code arrives by e-mail; the demo shows it on screen instead
+    return { ok:true, sent:true, demoCode: demo.vcode[em] };
+  }
   if(body.action === "adminSetPassword"){
     const em = String(body.email || "").trim().toLowerCase();
     if(ADMIN_EMAILS.indexOf(em) < 0) return { ok:false, error: NOT_ADMIN_MSG };
     if(demoLocked(em)) return { ok:false, error: LOCK_MSG };
     if(demo.creds[em]) return { ok:false, error: "A password already exists for this account. To reset it, the main admin clears the Password cell on the Admins tab - then create a new one here." };
+    if(!demo.vcode[em]) return { ok:false, needCode:true, error: "E-mail yourself a verification code first - codes expire after 10 minutes." };
+    if(String(body.code || "").trim() !== demo.vcode[em]) return { ok:false, error: "Wrong verification code - check the e-mail we sent you." };
     const pw = String(body.password || "");
     if(pw.length < 8 || pw.length > 64) return { ok:false, error: "Password must be 8 to 64 characters" };
+    delete demo.vcode[em];
     const pin = String(Math.floor(1000 + Math.random() * 9000));
     demo.creds[em] = { pw: pw, pin: pin };
     demo.lastEmail = em;
@@ -485,7 +503,11 @@ async function api(body){
   if(DEMO) return demoApi(body);
   const res = await fetch(CONFIG.API_URL, { method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
-  return res.json();
+  try{ return await res.json(); }
+  catch(e){
+    // an HTML answer usually means the script needs (re-)authorization
+    throw new Error("The backend did not answer normally. If the script was just updated: open the Apps Script editor, Run setup() once, approve the permissions, then Deploy > Manage deployments > edit > New version.");
+  }
 }
 
 /* ════════ helpers ════════ */
@@ -987,7 +1009,7 @@ async function login(){
         $("#loginEmail").disabled = true;
         $("#login-normal").style.display = "none";
         $("#login-setup").style.display = "block";
-        $("#newPassword").focus();
+        $("#btn-sendcode").focus();
         return;
       }
       throw new Error(j.error || "sign-in failed");
@@ -1000,21 +1022,43 @@ async function login(){
     $("#login-err").innerHTML = "<b>Could not sign in.</b> " + esc(e.message);
   }finally{ state._busy = false; btn.disabled = false; btn.textContent = "Sign in"; }
 }
+async function sendCode(){
+  if(state._busy) return;
+  const email = $("#loginEmail").value.trim().toLowerCase();
+  state._busy = true;
+  const btn = $("#btn-sendcode"); btn.disabled = true; btn.textContent = "Sending…";
+  $("#setup-err").style.display = "none";
+  try{
+    const j = await api({ action: "adminSendCode", email: email });
+    if(!j.ok) throw new Error(j.error || "could not send the code");
+    const note = $("#code-sent"); note.style.display = "block";
+    note.innerHTML = "<b>Code sent.</b> Check the inbox (and spam folder) of " + esc(email) +
+      (j.demoCode ? " — demo mode: your code is <b>" + esc(j.demoCode) + "</b>" : "") + ".";
+    announce("Verification code sent to " + email);
+    $("#setupCode").focus();
+  }catch(e){
+    $("#setup-err").style.display = "block";
+    $("#setup-err").innerHTML = "<b>No code sent.</b> " + esc(e.message);
+  }finally{ state._busy = false; btn.disabled = false; btn.textContent = "📧 E-mail me a verification code"; }
+}
 async function createPassword(){
   if(state._busy) return;
   const email = $("#loginEmail").value.trim().toLowerCase();
+  const code = $("#setupCode").value.trim();
   const pw = $("#newPassword").value, cf = $("#confirmPassword").value;
+  const codeOK = setInvalid($("#setupCode"), !/^\d{6}$/.test(code));
   const pwOK = setInvalid($("#newPassword"), !(pw.length >= 8 && pw.length <= 64 && !/^[=+\-@']/.test(pw)));
   const cfOK = setInvalid($("#confirmPassword"), cf !== pw);
-  if(!pwOK || !cfOK) return;
+  if(!codeOK || !pwOK || !cfOK) return;
   state._busy = true;
   const btn = $("#btn-create"); btn.disabled = true; btn.textContent = "Creating…";
   $("#setup-err").style.display = "none";
   try{
-    const j = await api({ action: "adminSetPassword", email: email, password: pw });
+    const j = await api({ action: "adminSetPassword", email: email, password: pw, code: code });
     if(!j.ok) throw new Error(j.error || "could not create the password");
     finishLogin(j, email);
-    $("#newPassword").value = ""; $("#confirmPassword").value = "";
+    $("#newPassword").value = ""; $("#confirmPassword").value = ""; $("#setupCode").value = "";
+    $("#code-sent").style.display = "none";
     $("#login-setup").style.display = "none";
     $("#pin-value").textContent = j.pin;
     $("#login-pin").style.display = "block";
@@ -1049,12 +1093,16 @@ function logout(){
 }
 $("#btn-login").addEventListener("click", login);
 $("#btn-create").addEventListener("click", createPassword);
+$("#btn-sendcode").addEventListener("click", sendCode);
 $("#btn-setup-back").addEventListener("click", () => {
   $("#login-setup").style.display = "none"; $("#setup-err").style.display = "none";
-  $("#newPassword").value = ""; $("#confirmPassword").value = "";
+  $("#newPassword").value = ""; $("#confirmPassword").value = ""; $("#setupCode").value = "";
+  $("#code-sent").style.display = "none";
   $("#loginEmail").disabled = false;
   $("#login-normal").style.display = "";
 });
+$("#setupCode").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
+$("#setupCode").addEventListener("keydown", e => { if(e.key === "Enter") $("#newPassword").focus(); });
 $("#newPassword").addEventListener("keydown", e => { if(e.key === "Enter") $("#confirmPassword").focus(); });
 $("#btn-pin-continue").addEventListener("click", async () => {
   $("#login-pin").style.display = "none"; $("#login-normal").style.display = "";
@@ -1069,7 +1117,7 @@ $("#btn-logout").addEventListener("click", logout);
 (function init(){
   $("#loginAdminPin").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); });
   if(DEMO){
-    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sample bids are shown; changes are not saved anywhere. Sign in with one of the configured admin e-mails to preview the full flow: your first sign-in asks you to create a password and shows your 4-digit Admin PIN. Other e-mails are refused, exactly as they will be live.</div>';
+    $("#mode-note").innerHTML = '<div class="note warn"><b>Demo mode — not connected to the backend.</b> Sample bids are shown; changes are not saved anywhere. Sign in with one of the configured admin e-mails to preview the full flow: first sign-in asks for a 6-digit verification code (live it arrives by e-mail — the demo shows it on screen), then you create a password and receive your 4-digit Admin PIN. Other e-mails are refused, exactly as they will be live.</div>';
   }
   try{
     const s = JSON.parse(sessionStorage.getItem("bid-admin-session") || "null");
