@@ -136,6 +136,92 @@ Workspace tenant, for anything beyond a pilot.
 - Drawn/typed signatures are provisional by design — BOT requires wet signatures
   witnessed by the depository participant, which happens at the branch step.
 
+## Staff bid-entry portal (`../bids/`)
+
+A companion **staff-only portal** for entering client bids in BOT auctions
+(modeled on **CDS/FORM/03**: up to 4 bid lines, face value + price per 100 at
+4 decimals). One Google Sheet drives it, via `backend/bids-apps-script.gs`:
+
+- **Staff sign-in (no register)** — staff are many, so they are *not*
+  listed anywhere: any e-mail ending `@crdbbank.co.tz` plus a staff number
+  (digits, ≤5) signs in to the staff portal, and every bid records both.
+  This deliberately trusts the company e-mail format; the deadline, field
+  validation and the admin's register review are the controls on content.
+- **Admins tab** — Email / Name / Branch / Password / AdminPin / Active:
+  the **admin access list**, seeded automatically from the script's
+  `ADMIN_EMAILS` the first time; after that, add or remove admin rows in
+  the tab directly (no redeploy). Any other e-mail trying the admin portal
+  sees "User not defined as admin — please contact the system admin for
+  configuration". **First sign-in**: each admin creates their own password
+  in the portal; the server stores it in the tab and generates a random
+  **4-digit Admin PIN** shown once — both are required at every sign-in.
+  Five wrong attempts lock the e-mail for 10 minutes — the lock clears by
+  itself, or the master admin presses **Unlock now** in the portal's Login
+  Activity tab to free the person immediately. **Reset**: clear the
+  person's Password cell; on their next sign-in they create a new password
+  and receive a new PIN. Passwords sit in the Sheet in clear text so the
+  main admin can help people — protect the Sheet itself accordingly.
+- **Auctions tab** — one row per auction (number, security, coupon, ISIN,
+  dates, min bid, multiple, price band). The `Active` column is the admin
+  switch: `YES` = open, `CLOSED` = staff see a thank-you note that the
+  auction is closed (consider the next one), `NO` = hidden. Leave
+  `SettlementDate` blank → **auto: the day after the auction**. Leave
+  `BidCutoff` blank → **auto deadline: 5:00 PM EAT the day before the
+  auction**; type an explicit date-time to override it (grace period /
+  extension). Next auction = add a row. The server re-checks the live sheet
+  on every submission and portals refresh their auction every 2 minutes.
+- **Bids tab** — one row per bid with a server timestamp, bid reference,
+  staff identity, client, amounts, prices and the client's e-mail (for
+  sharing results with successful bidders). File → Download → Excel.
+
+Validation is enforced twice (browser and server), with instant inline
+feedback as staff move between fields: securities account strictly
+`BOTCDSB026`/`BOTCDSCORU` + digits, amount ≥ minimum and in the configured
+multiples, price inside the band with ≤4 decimals, account to debit 10–13
+digits, client e-mail required, deadline respected.
+
+### Admin portal (`../bids/admin.html`)
+
+A companion **admin-only portal** on the same backend (same `/exec` URL in
+its `CONFIG.API_URL`). Sign-in is the admin's e-mail + the password they
+created on first sign-in + their generated 4-digit Admin PIN; only e-mails
+on the Admins tab are accepted — every other e-mail is refused with "User
+not defined as admin". Admin sessions use a separate token scope, so a
+staff-portal session can never call admin endpoints. Two tabs:
+
+- **Bid Reports** — pick any auction; totals at a glance (bids, total face
+  value, clean vs WAP split, consideration) above the full register, one row
+  per bid with its timestamp. **Download Excel** produces a real `.xlsx`
+  (generated in the browser, no libraries); **Download PDF** opens a
+  print-styled report (headed, totalled, with sign-off lines) — choose
+  "Save as PDF". Auto-refreshes every 2 minutes while open.
+- **Auction Setup** — list of all auction rows with status badges and
+  one-click **Open / Close now / Hide**, plus a full editor for creating the
+  next auction or amending one. Desk defaults are pre-filled as numbers
+  (minimum bid 1,000,000; multiples 100,000) and the clean-price sanity
+  band is automatic (50–200 per 100 — no field to fill). Saves write to
+  the Auctions tab, so the staff portal reflects changes within
+  ~2 minutes; the Sheet remains the master record and can still be edited
+  directly.
+- **Master admin** — the `MASTER_ADMIN` e-mail in the script additionally
+  gets a **Login Activity** tab: a live **lock-status table** of every
+  admin account (OK / failed attempts / LOCKED, with an **Unlock now**
+  button that clears a lock instantly — no 10-minute wait), above the
+  sign-in trail (every admin sign-in, failed attempt, lockout, unlock and
+  password creation — recorded on the `AdminLog` sheet tab, last 200
+  events shown) — plus a master-only **Delete** button per auction.
+  Deleting removes the auction definition only: its recorded bids stay in
+  the register and remain downloadable (the report dropdown lists them as
+  "deleted · archived bids").
+
+Setup mirrors the account form: blank Sheet → paste the script → set
+`SHEET_ID` and a random `TOKEN_SECRET` → Run `setup()` once → deploy as Web
+App (Execute as Me / access: Anyone) → put the `/exec` URL in
+`bids/index.html` **and** `bids/admin.html` `CONFIG.API_URL`. With no URL
+configured both pages run in demo mode (any `@crdbbank.co.tz` e-mail + any
+≤5-digit staff number signs in, nothing is sent; on the staff portal append
+`?closed=1` to preview the closed-auction note).
+
 ## Files
 
 - `index.html` — the whole app (no build step, no dependencies; fonts are the only
