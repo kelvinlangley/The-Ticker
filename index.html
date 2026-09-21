@@ -1,4 +1,6 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <title>The Ticker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -197,7 +199,8 @@
   .toolcard a:hover{background:#fff}
   @media (max-width:700px){ .toolcard{grid-template-columns:1fr} .toolcard a{justify-self:start} }
 </style>
-
+</head>
+<body>
 <!-- ═════════════ MASTHEAD ═════════════ -->
 <header class="mast">
   <div class="mast-in">
@@ -1045,5 +1048,5 @@ render();
 /* TOOLS-LINKS — static, not part of the refresh layers: keep as is */
 document.querySelectorAll('a[data-tool]').forEach(function(a){ if(!/github\.io$/.test(location.hostname)){ a.target='_blank'; a.rel='noopener'; } });
 </script>
-
-</body></html>
+</body>
+</html>
