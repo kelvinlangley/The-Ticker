@@ -1,0 +1,806 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2c2015">
+<title>TZ Bond Calculator · The Ticker</title>
+<!-- TZ Bond Calculator. Copyright (c) 2026 The Ticker TZ. All rights reserved.
+     Free to use as provided. Not to be sold, altered, rebranded or passed off as another's work
+     without written permission from The Ticker TZ.
+     The Ticker edition, 21 Sep 2026: built on the 16 Sep 2026 calculator, same maths and bond list. -->
+<meta name="description" content="Free Tanzania Treasury bond calculator: price to yield and yield to price for Bank of Tanzania bonds, with accrued interest, duration, DV01 and a PDF valuation. A product of The Ticker.">
+<meta name="author" content="The Ticker TZ">
+<meta name="copyright" content="Copyright (c) 2026 The Ticker TZ. All rights reserved.">
+<meta property="og:title" content="TZ Bond Calculator · The Ticker">
+<meta property="og:description" content="Price to yield and yield to price for Bank of Tanzania Treasury bonds, with accrued interest, duration and a PDF valuation.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://kelvinlangley.github.io/The-Ticker/bond-calculator.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#efe5d8; --surface:#faf5ee; --field:#fdf9f2; --ink:#2b2119; --muted:#7d6c58;
+    --line:#e4d8c7; --line2:#ece2d3; --track:#e9ddcc;
+    --forest:#2c2015; --forest-2:#3a2b1c; --forest-soft:#e9ddcc; --forest-ink:#2b2119;
+    --gold:#c9b8a2; --gold-deep:#6b5c4a; --gold-soft:rgba(59,42,28,.14);
+    --bad:#bc3327; --off:#8f7e69;
+    --mast-ink:#f8f2e9; --mast-ink2:#c9b8a2; --mast-border:rgba(248,242,233,.16);
+    --shadow:0 1px 2px rgba(43,33,25,.07), 0 10px 26px -14px rgba(43,33,25,.28);
+    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --brand:"Poppins","IBM Plex Sans",system-ui,sans-serif;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+  html{background:var(--forest)}
+  main{max-width:1040px;margin:0 auto;padding:22px 16px 40px}
+  .cols{display:grid;grid-template-columns:minmax(0,1fr);gap:0 28px;align-items:start}
+  .col{min-width:0}
+  @media (min-width:900px){ .cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .col .result{margin-top:0} }
+
+  /* brand bar: the wordmark's own slot, the portal's espresso masthead at product size */
+  .mast{margin:0;background:linear-gradient(160deg,var(--forest-2) 0%,var(--forest) 70%);color:var(--mast-ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mast-in{max-width:1040px;margin:0 auto;padding:15px 16px 13px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+  .wordmark{display:inline-flex;flex-direction:column;line-height:1;font-size:27px;color:var(--mast-ink);text-decoration:none}
+  .wordmark .the{font:500 .235em/1 var(--brand);letter-spacing:.52em;margin:0 0 .13em .1em}
+  .wordmark .tick{font:800 1em/1 var(--brand);letter-spacing:-.02em;display:flex;align-items:baseline;gap:.22em}
+  .wordmark .tris{display:inline-flex;gap:.11em;align-items:flex-end}
+  .wordmark svg{display:block;width:.41em;height:.375em;overflow:visible}
+  .mast-link{font:600 .7rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mast-ink);text-decoration:none;border:1px solid var(--mast-border);border-radius:999px;padding:7px 12px;white-space:nowrap}
+  .mast-link:hover{border-color:rgba(248,242,233,.4)}
+  @media (max-width:359px){ .mast-link{display:none} }
+  .mast-link:focus-visible,a.wordmark:focus-visible{outline:3px solid var(--mast-ink2);outline-offset:3px}
+  .nav{position:sticky;top:0;z-index:40;background:rgba(44,32,21,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--mast-border);border-bottom:1px solid var(--mast-border)}
+  .nav-in{max-width:1040px;margin:0 auto;padding:0 6px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+  .nav-in::-webkit-scrollbar{display:none}
+  .nav a{color:var(--mast-ink2);text-decoration:none;font-size:13px;font-weight:500;padding:12px 11px;white-space:nowrap;border-bottom:2px solid transparent}
+  .nav a:hover{color:var(--mast-ink)}
+  .nav a.on{color:var(--mast-ink);font-weight:600;border-bottom-color:#1fbf75}
+  .nav a:focus-visible{outline:2px solid var(--mast-ink2);outline-offset:-2px}
+
+  /* the portal's espresso foot */
+  .sitefoot{background:var(--forest);color:var(--mast-ink2);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .foot-in{max-width:1040px;margin:0 auto;padding:26px 16px 22px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px 32px;align-items:start;font-size:13px;line-height:1.55}
+  .foot-in .wordmark{font-size:22px}
+  .foot-in p{margin:0;max-width:80ch}
+  .foot-in p + p{margin-top:.55rem}
+  .foot-in b{color:var(--mast-ink);font-weight:600}
+  .foot-in a{color:var(--mast-ink);text-underline-offset:3px}
+  .foot-bar{border-top:1px solid var(--mast-border);padding:14px 16px calc(18px + env(safe-area-inset-bottom));text-align:center;font:500 11.5px/1.4 var(--mono);color:var(--mast-ink2)}
+  .foot-bar b{color:var(--mast-ink);font-weight:600}
+  @media (max-width:640px){ .foot-in{grid-template-columns:1fr} }
+  header{margin-bottom:18px}
+  h1{font-family:var(--sans);font-size:clamp(24px,1.2rem + 1.5vw,32px);font-weight:700;margin:0;letter-spacing:-.015em;line-height:1.12}
+  .rule{display:none}
+  .sub{color:var(--muted);font-size:15px;margin:.35rem 0 0}
+
+  .mode{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;background:var(--track);border-radius:13px;margin-bottom:16px}
+  .mode button{appearance:none;border:0;background:transparent;border-radius:9px;padding:12px 8px;
+    font:inherit;font-size:15px;font-weight:700;color:var(--muted);cursor:pointer;line-height:1.25}
+  .mode button small{display:block;font-weight:500;font-size:13px;margin-top:2px}
+  .mode button[aria-pressed="true"]{background:var(--surface);color:var(--forest-ink);box-shadow:var(--shadow)}
+  .mode button:focus-visible,.seg button:focus-visible,.btn:focus-visible,.link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+  section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 16px 6px;margin-bottom:12px;box-shadow:var(--shadow)}
+  h2{font-family:var(--sans);font-size:17px;font-weight:700;color:var(--ink);margin:0 0 12px;line-height:1.1}
+  .field{margin-bottom:12px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{display:block;font-size:13.5px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font:inherit;font-size:17px;color:var(--ink);background:var(--field);
+    border:1px solid var(--line);border-radius:10px;padding:0 12px;font-variant-numeric:tabular-nums}
+  input,select{height:48px}
+  textarea{padding:10px 12px;font-size:13px;min-height:88px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  input[type="date"]{-webkit-appearance:none;appearance:none}
+  input::placeholder{color:var(--muted);opacity:.7}
+  .unit{position:relative}
+  .unit input{padding-right:44px}
+  .unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--track);border-radius:10px;height:48px}
+  .seg button{appearance:none;border:0;background:transparent;border-radius:7px;font:inherit;font-size:14.5px;font-weight:700;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--surface);color:var(--forest-ink);box-shadow:var(--shadow)}
+
+  .search{position:relative}
+  .hits{position:absolute;left:0;right:0;top:50px;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);overflow:hidden;max-height:340px;overflow-y:auto}
+  .hits button{display:block;width:100%;text-align:left;appearance:none;border:0;border-bottom:1px solid var(--line2);background:transparent;
+    padding:11px 12px;font:inherit;color:var(--ink);cursor:pointer}
+  .hits button:last-child{border-bottom:0}
+  .hits button:active{background:var(--forest-soft)}
+  .hits b{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--forest-ink)}
+  .hits small{display:block;color:var(--muted);font-size:13px}
+  .hits .none{padding:12px;color:var(--muted);font-size:14px}
+  .chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--forest-soft);color:var(--forest-ink);
+    border-left:3px solid var(--gold);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px;line-height:1.3}
+  .chip .t{font-family:var(--mono);font-size:15px;font-weight:600;display:block}
+  .chip small{display:block;font-weight:500;opacity:.9}
+  .chipBtns{display:flex;gap:14px;flex-shrink:0}
+  #bondFields.locked input:disabled,#bondFields.locked select:disabled{background:var(--track);border-color:transparent;color:var(--ink);opacity:1;-webkit-text-fill-color:var(--ink);-webkit-opacity:1}
+  #bondFields.locked select:disabled{-webkit-appearance:none;appearance:none}
+  .link{appearance:none;border:0;background:transparent;color:var(--forest-ink);font:inherit;font-size:14px;font-weight:700;padding:6px 0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:4px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;height:44px;padding:0 16px;
+    font:inherit;font-size:15px;font-weight:700;cursor:pointer;flex:1}
+  .btn.primary{background:var(--forest);border-color:var(--forest);color:var(--mast-ink)}
+  .btn.danger{color:var(--bad)}
+  .btn:active{opacity:.85}
+  .form{border-top:1px solid var(--line2);padding-top:12px;margin-top:4px}
+  .form h3{font-family:var(--sans);font-size:16px;font-weight:700;margin:0 0 10px}
+  .err{color:var(--bad);font-size:14px;margin:0 0 8px}
+
+  .result{position:relative;background:linear-gradient(160deg,var(--forest-2) 0%,var(--forest) 70%);color:var(--mast-ink);border-radius:16px;padding:20px 18px 16px;margin:16px 0 12px;box-shadow:var(--shadow);overflow:hidden}
+  .result .lead{font-size:11px;font-weight:600;color:var(--mast-ink2);margin:0;letter-spacing:.12em;text-transform:uppercase}
+  .result .big{font-family:var(--mono);font-size:clamp(34px,9.5vw,44px);font-weight:600;letter-spacing:-.04em;line-height:1.05;margin:6px 0 14px}
+  .result dl{margin:0;display:grid;grid-template-columns:auto 1fr;row-gap:8px;column-gap:12px;font-size:15.5px}
+  .result dt{opacity:.85}
+  .result dd{margin:0;text-align:right;font-family:var(--mono);font-weight:600}
+  .result dd small{font-weight:500;opacity:.8;font-size:12.5px}
+  .result .amount{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);display:block}
+  .result .amount dt{font-size:11px;font-weight:600;color:var(--mast-ink2);opacity:1;letter-spacing:.12em;text-transform:uppercase}
+  .result .amount dd{font-family:var(--mono);font-size:21px;font-weight:600;letter-spacing:-.03em;text-align:left;line-height:1.2;margin-top:3px}
+  .result.off{background:var(--off)}
+  .msg{margin:0 0 4px;font-size:14px;color:#ffb9b2;min-height:1.2em}
+  .pdf{margin-top:14px;width:100%;height:46px;border-radius:10px;border:0;background:var(--mast-ink);
+    color:#2b2119;font:inherit;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.01em}
+  .pdf:active{filter:brightness(.95)}
+  .pdf[disabled]{opacity:.6;cursor:default}
+  .result .links{display:flex;justify-content:center;gap:18px;margin-top:6px;flex-wrap:wrap}
+  .result .link{color:var(--mast-ink);font-weight:600;font-size:13.5px;text-decoration-color:var(--mast-ink2)}
+
+  details{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  summary{padding:14px 16px;font-family:var(--sans);font-weight:700;font-size:16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--gold-deep);font-size:22px;line-height:1;font-weight:400}
+  details[open] summary::after{content:"–"}
+  .body{padding:0 16px 14px}
+  .kv{display:grid;grid-template-columns:1fr auto;row-gap:8px;column-gap:12px;font-size:15px;margin:0}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0;text-align:right;font-family:var(--mono);font-weight:500}
+  .tbl{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-family:var(--mono)}
+  th{text-align:left;font-weight:700;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{padding:6px 4px;border-bottom:1px solid var(--line2)}
+  td:not(:first-child),th:not(:first-child){text-align:right}
+  .note{font-size:13px;color:var(--muted);margin:8px 0 0}
+  .foot{font-size:12px;color:var(--muted);text-align:center;margin:22px 0 0;line-height:1.5}
+  @media (prefers-reduced-motion:no-preference){ .mode button,.seg button{transition:background .15s,color .15s} }
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="mast-in">
+    <a class="wordmark" href="https://kelvinlangley.github.io/The-Ticker/" aria-label="The Ticker, back to the portal"><span class="the">The</span><span class="tick">ticker<span class="tris" aria-hidden="true"><svg viewBox="0 0 26 24"><path d="M13 2 L24 22 L2 22 Z" fill="none" stroke="#1fbf75" stroke-width="4" stroke-linejoin="round"/></svg><svg viewBox="0 0 26 24"><path d="M13 22 L2 2 L24 2 Z" fill="none" stroke="#e8453c" stroke-width="4" stroke-linejoin="round"/></svg></span></span></a>
+    <a class="mast-link" href="https://kelvinlangley.github.io/The-Ticker/">Open the portal &rarr;</a>
+  </div>
+</header>
+<nav class="nav" aria-label="The Ticker">
+  <div class="nav-in">
+    <a class="on" href="#top" aria-current="page">Bond Calculator</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#policy">Policy Desk</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#economy">Economy</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#bonds">Bonds &amp; Yields</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#tbills">Treasury Bills</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#calendar">Auction Calendar</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#market">Market Snapshot</a>
+    <a href="https://kelvinlangley.github.io/The-Ticker/#glossary">Glossary</a>
+  </div>
+</nav>
+<main id="top">
+  <header>
+    <h1>TZ Bond Calculator</h1>
+    <div class="rule"></div>
+    <p class="sub">Bank of Tanzania Treasury bonds — price to yield, yield to price</p>
+  </header>
+
+  <div class="cols"><div class="col">
+  <div class="mode" role="group" aria-label="What do you want to find?">
+    <button type="button" id="modeYield" aria-pressed="true">Find yield<small>I have the price</small></button>
+    <button type="button" id="modePrice" aria-pressed="false">Find price<small>I have the yield</small></button>
+  </div>
+
+  <section>
+    <h2>Bond</h2>
+    <div class="field search">
+      <label for="search">Find a bond in the BoT list</label>
+      <input id="search" type="search" placeholder="e.g. 710, 12.25 or 20" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="hits" id="hits" hidden></div>
+    </div>
+    <div class="chip" id="chip" hidden><div><span class="t" id="chipTitle"></span><small id="chipNote"></small></div><div class="chipBtns"><button type="button" class="link" id="editBtn">Edit</button><button type="button" class="link" id="clearBtn" title="Unlock the fields for manual entry">Clear</button></div></div>
+
+    <div id="bondFields">
+    <div class="row">
+      <div class="field"><label for="name">Bond / issue no.</label><input id="name" type="text" placeholder="e.g. 710" autocomplete="off"></div>
+      <div class="field"><label for="freq">Coupons per year</label>
+        <select id="freq"><option value="2" selected>Semi-annual</option><option value="1">Annual</option><option value="4">Quarterly</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="maturity">Maturity date</label><input id="maturity" type="date"></div>
+      <div class="field"><label for="coupon">Coupon rate</label><div class="unit"><input id="coupon" type="text" inputmode="decimal" placeholder="12.25"><span>%</span></div></div>
+    </div>
+    </div>
+    <button type="button" class="link" id="addBtn">+ Add a new auction / bond</button>
+
+    <div class="form" id="bondForm" hidden>
+      <h3 id="formTitle">Add a new bond</h3>
+      <div class="row">
+        <div class="field"><label for="fNo">Issue no.</label><input id="fNo" type="text" inputmode="numeric" placeholder="e.g. 713"></div>
+        <div class="field"><label for="fCoupon">Coupon rate</label><div class="unit"><input id="fCoupon" type="text" inputmode="decimal" placeholder="e.g. 11.25"><span>%</span></div></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="fTenor">Tenor</label><div class="unit"><input id="fTenor" type="text" inputmode="numeric" placeholder="e.g. 10"><span>yrs</span></div></div>
+        <div class="field"><label for="fFreq">Coupons per year</label>
+          <select id="fFreq"><option value="2" selected>Semi-annual</option><option value="1">Annual</option><option value="4">Quarterly</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="fAuction">Auction date</label><input id="fAuction" type="date"></div>
+        <div class="field"><label for="fMaturity">Maturity date</label><input id="fMaturity" type="date"></div>
+      </div>
+      <p class="note" style="margin:-4px 0 10px">Leave maturity blank and it is worked out as auction date + 1 day (T+1 settlement) + tenor, the way BoT sets it. If the tender document shows a different date, type that one.</p>
+      <p class="err" id="fErr"></p>
+      <div class="actions">
+        <button type="button" class="btn primary" id="saveBtn">Save bond</button>
+        <button type="button" class="btn" id="cancelBtn">Cancel</button>
+        <button type="button" class="btn danger" id="deleteBtn" hidden>Remove</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Trade</h2>
+    <div class="field"><label for="face">Face value (optional — for the settlement amount)</label><div class="unit"><input id="face" type="text" inputmode="numeric" placeholder="e.g. 207,000,000"><span>TZS</span></div></div>
+    <div class="row">
+      <div class="field"><label for="settle">Settlement date</label><input id="settle" type="date"></div>
+      <div class="field" id="inPrice"><label for="price">Price per 100</label><input id="price" type="text" inputmode="decimal" placeholder="e.g. 109.9673"></div>
+      <div class="field" id="inYield" hidden><label for="yield">Yield to maturity</label><div class="unit"><input id="yield" type="text" inputmode="decimal" placeholder="e.g. 11.00"><span>%</span></div></div>
+    </div>
+    <div class="field" id="inPriceType"><label>The price above is</label>
+      <div class="seg" role="group"><button type="button" id="ptClean" aria-pressed="true">Clean</button><button type="button" id="ptDirty" aria-pressed="false">Dirty (incl. accrued)</button></div></div>
+  </section>
+
+  </div><div class="col">
+  <div class="result" id="result">
+    <p class="lead" id="leadLabel">Yield to maturity</p>
+    <p class="big" id="bigValue">—</p>
+    <p class="msg" id="msg"></p>
+    <dl>
+      <dt id="rFirstLabel">Clean price</dt><dd id="rFirst">—</dd>
+      <dt>Accrued interest</dt><dd id="rAccr">—</dd>
+      <dt>Dirty price</dt><dd id="rDirty">—</dd>
+    </dl>
+    <dl class="amount">
+      <dt>Settlement amount</dt><dd id="rAmount">—</dd>
+    </dl>
+    <button type="button" class="pdf" id="pdfBtn">Download summary PDF</button>
+    <div class="links"><button type="button" class="link" id="pdfFullBtn">Full report (risk &amp; cash flows)</button><button type="button" class="link" id="copyBtn">Copy as text</button></div>
+  </div>
+
+  <details>
+    <summary>Coupon period &amp; risk</summary>
+    <div class="body">
+      <dl class="kv">
+        <dt>Last coupon date</dt><dd id="dPrev">—</dd>
+        <dt>Next coupon date</dt><dd id="dNext">—</dd>
+        <dt>Days accrued / in period</dt><dd id="dDays">—</dd>
+        <dt>Coupons remaining</dt><dd id="dN">—</dd>
+        <dt>Years to maturity</dt><dd id="dYrs">—</dd>
+        <dt>Coupon per period (per 100)</dt><dd id="dCpn">—</dd>
+        <dt>Macaulay duration</dt><dd id="dMac">—</dd>
+        <dt>Modified duration</dt><dd id="dMod">—</dd>
+        <dt>DV01 per 100</dt><dd id="dDv01">—</dd>
+        <dt>DV01 on face value</dt><dd id="dDv01F">—</dd>
+        <dt>Clean price if yield +1%</dt><dd id="dUp">—</dd>
+        <dt>Clean price if yield −1%</dt><dd id="dDown">—</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details>
+    <summary>Coupon schedule</summary>
+    <div class="body">
+      <div class="tbl"><table><thead><tr><th>#</th><th>Date</th><th>Cash flow /100</th><th>PV /100</th></tr></thead><tbody id="sched"></tbody></table></div>
+      <p class="note" id="schedNote"></p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Settings &amp; backup</summary>
+    <div class="body">
+      <div class="field"><label for="accrBasis">Accrued interest day count</label>
+        <select id="accrBasis"><option value="act365" selected>Actual/365 (BoT tender convention)</option><option value="actact">Actual/Actual</option></select></div>
+      <div class="field"><label for="redemption">Redemption per 100</label><input id="redemption" type="text" inputmode="decimal" value="100"></div>
+      <p class="note">BoT tender documents state Actual/365 for accrued interest, so that is the default. Price ⇄ yield always uses the Actual/Actual street method (same as Excel PRICE / YIELD with basis 1), which is why the sum of discounted cash flows can differ slightly from the dirty price.</p>
+      <div class="field" style="margin-top:14px"><label for="backup">Bonds you added or edited (backup)</label>
+        <textarea id="backup" placeholder="Nothing added yet. Bonds you add are kept in this browser; copy this text to move them to another phone."></textarea></div>
+      <div class="actions">
+        <button type="button" class="btn" id="copyListBtn">Copy list</button>
+        <button type="button" class="btn" id="importBtn">Import pasted list</button>
+      </div>
+      <p class="note" id="storeNote"></p>
+    </div>
+  </details>
+
+  </div></div>
+  <p class="foot" id="foot"></p>
+</main>
+<footer class="sitefoot" id="tkFoot"><div class="foot-in"><span class="wordmark" role="img" aria-label="The Ticker"><span class="the">The</span><span class="tick">ticker<span class="tris" aria-hidden="true"><svg viewBox="0 0 26 24"><path d="M13 2 L24 22 L2 22 Z" fill="none" stroke="#1fbf75" stroke-width="4" stroke-linejoin="round"/></svg><svg viewBox="0 0 26 24"><path d="M13 22 L2 2 L24 2 Z" fill="none" stroke="#e8453c" stroke-width="4" stroke-linejoin="round"/></svg></span></span></span><div><p><b>TZ Bond Calculator</b> is a product of The Ticker TZ. Free to use as it is. It may not be sold, altered or rebranded without written permission.</p><p>For working purposes only; not investment advice and not an official contract note. Always confirm against the Bank of Tanzania tender document before dealing.</p><p>Policy rates, auction results, yields by tenor and the issuance calendar are on <a href="https://kelvinlangley.github.io/The-Ticker/">The Ticker portal</a>.</p></div></div><div class="foot-bar">© 2026 <b>The Ticker TZ</b> · All rights reserved.</div></footer>
+
+<script>
+(function(){
+  const DAY = 86400000;
+  const $ = id => document.getElementById(id);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const STORE_KEY = 'tzbond_custom_v1';
+
+  /* ---------- BoT bond list (from bot.go.tz/TBonds auction results) ---------- */
+  // n = issue no, c = coupon %, t = tenor yrs, a = first auction date, m = maturity, s = 'v' verified from tender doc / 'd' derived (auction + 1 day + tenor)
+  const SEED = [{"n":"712","c":9.5,"t":2,"a":"2026-07-29","m":"2028-07-30","s":"d"},{"n":"711","c":11.25,"t":10,"a":"2026-07-22","m":"2036-07-23","s":"d"},{"n":"710","c":12.25,"t":20,"a":"2026-07-08","m":"2046-07-09","s":"v"},{"n":"702","c":11.0,"t":20,"a":"2026-05-28","m":"2046-05-29","s":"v"},{"n":"701","c":10.75,"t":15,"a":"2026-05-13","m":"2041-05-14","s":"d"},{"n":"700","c":10.25,"t":5,"a":"2026-04-29","m":"2031-04-30","s":"d"},{"n":"699","c":10.5,"t":10,"a":"2026-04-15","m":"2036-04-16","s":"d"},{"n":"698","c":12.0,"t":20,"a":"2026-03-18","m":"2046-03-19","s":"d"},{"n":"697","c":9.5,"t":2,"a":"2026-03-04","m":"2028-03-05","s":"d"},{"n":"696","c":12.25,"t":15,"a":"2026-02-18","m":"2041-02-19","s":"d"},{"n":"695","c":13.25,"t":25,"a":"2026-02-04","m":"2051-02-05","s":"d"},{"n":"694","c":11.75,"t":10,"a":"2026-01-14","m":"2036-01-15","s":"d"},{"n":"693","c":13.0,"t":20,"a":"2025-12-17","m":"2045-12-18","s":"d"},{"n":"689","c":10.75,"t":5,"a":"2025-11-26","m":"2030-11-27","s":"d"},{"n":"688","c":12.75,"t":15,"a":"2025-11-12","m":"2040-11-13","s":"d"},{"n":"687","c":10.0,"t":2,"a":"2025-10-15","m":"2027-10-16","s":"d"},{"n":"686","c":13.75,"t":25,"a":"2025-09-24","m":"2050-09-25","s":"d"},{"n":"678","c":14.0,"t":20,"a":"2025-09-03","m":"2045-09-04","s":"d"},{"n":"675","c":15.0,"t":25,"a":"2025-08-06","m":"2050-08-07","s":"d"},{"n":"674","c":13.5,"t":10,"a":"2025-07-30","m":"2035-07-31","s":"d"},{"n":"673","c":12.75,"t":5,"a":"2025-07-16","m":"2030-07-17","s":"v"},{"n":"672","c":12.0,"t":2,"a":"2025-07-09","m":"2027-07-10","s":"d"},{"n":"671","c":13.0,"t":5,"a":"2025-03-19","m":"2030-03-20","s":"d"},{"n":"670","c":14.5,"t":15,"a":"2025-03-05","m":"2040-03-06","s":"d"},{"n":"669","c":15.25,"t":20,"a":"2025-02-19","m":"2045-02-20","s":"d"},{"n":"668","c":12.5,"t":2,"a":"2025-02-05","m":"2027-02-06","s":"d"},{"n":"667","c":14.0,"t":10,"a":"2025-01-22","m":"2035-01-23","s":"d"},{"n":"666","c":15.75,"t":25,"a":"2025-01-08","m":"2050-01-09","s":"d"},{"n":"656","c":11.15,"t":15,"a":"2024-02-07","m":"2039-02-08","s":"d"},{"n":"655","c":10.25,"t":10,"a":"2024-01-24","m":"2034-01-25","s":"d"},{"n":"653","c":12.56,"t":25,"a":"2023-12-27","m":"2048-12-28","s":"d"},{"n":"652","c":10.25,"t":10,"a":"2023-12-13","m":"2033-12-14","s":"d"},{"n":"651","c":11.15,"t":15,"a":"2023-11-29","m":"2038-11-30","s":"d"},{"n":"649","c":12.1,"t":20,"a":"2023-11-01","m":"2043-11-02","s":"d"},{"n":"648","c":8.6,"t":5,"a":"2023-10-18","m":"2028-10-19","s":"d"},{"n":"647","c":10.25,"t":10,"a":"2023-10-04","m":"2033-10-05","s":"d"},{"n":"646","c":11.15,"t":15,"a":"2023-09-20","m":"2038-09-21","s":"d"},{"n":"644","c":10.25,"t":10,"a":"2023-08-30","m":"2033-08-31","s":"d"},{"n":"643","c":12.56,"t":25,"a":"2023-08-16","m":"2048-08-17","s":"d"},{"n":"642","c":8.6,"t":5,"a":"2023-08-02","m":"2028-08-03","s":"d"},{"n":"641","c":10.25,"t":10,"a":"2023-07-19","m":"2033-07-20","s":"d"},{"n":"639","c":12.56,"t":25,"a":"2023-06-28","m":"2048-06-29","s":"d"},{"n":"638","c":12.1,"t":20,"a":"2023-06-21","m":"2043-06-22","s":"d"},{"n":"637","c":11.15,"t":15,"a":"2023-06-07","m":"2038-06-08","s":"d"},{"n":"636","c":10.25,"t":10,"a":"2023-05-31","m":"2033-06-01","s":"d"},{"n":"635","c":8.6,"t":5,"a":"2023-05-17","m":"2028-05-18","s":"d"},{"n":"634","c":12.56,"t":25,"a":"2023-05-10","m":"2048-05-11","s":"d"},{"n":"632","c":12.1,"t":20,"a":"2023-04-19","m":"2043-04-20","s":"d"},{"n":"631","c":12.56,"t":25,"a":"2023-04-05","m":"2048-04-06","s":"d"},{"n":"630","c":11.15,"t":15,"a":"2023-03-29","m":"2038-03-30","s":"d"},{"n":"628","c":12.56,"t":25,"a":"2023-03-01","m":"2048-03-02","s":"d"},{"n":"627","c":12.1,"t":20,"a":"2023-02-15","m":"2043-02-16","s":"d"},{"n":"626","c":10.25,"t":10,"a":"2023-02-01","m":"2033-02-02","s":"d"},{"n":"625","c":11.15,"t":15,"a":"2023-01-25","m":"2038-01-26","s":"d"},{"n":"623","c":8.6,"t":5,"a":"2023-01-04","m":"2028-01-05","s":"d"},{"n":"622","c":12.56,"t":25,"a":"2022-12-21","m":"2047-12-22","s":"d"},{"n":"621","c":10.25,"t":10,"a":"2022-12-07","m":"2032-12-08","s":"d"},{"n":"620","c":12.1,"t":20,"a":"2022-11-23","m":"2042-11-24","s":"d"},{"n":"619","c":9.48,"t":7,"a":"2022-11-09","m":"2029-11-10","s":"d"},{"n":"618","c":11.15,"t":15,"a":"2022-11-02","m":"2037-11-03","s":"d"},{"n":"617","c":12.56,"t":25,"a":"2022-10-19","m":"2047-10-20","s":"d"},{"n":"615","c":12.1,"t":20,"a":"2022-09-28","m":"2042-09-29","s":"d"},{"n":"614","c":10.25,"t":10,"a":"2022-09-14","m":"2032-09-15","s":"d"},{"n":"613","c":11.15,"t":15,"a":"2022-08-31","m":"2037-09-01","s":"d"},{"n":"604","c":8.6,"t":5,"a":"2022-08-10","m":"2027-08-11","s":"d"},{"n":"603","c":12.1,"t":20,"a":"2022-07-27","m":"2042-07-28","s":"d"},{"n":"602","c":9.48,"t":7,"a":"2022-07-20","m":"2029-07-21","s":"d"},{"n":"601","c":12.56,"t":25,"a":"2022-07-06","m":"2047-07-07","s":"d"},{"n":"600","c":12.1,"t":20,"a":"2022-06-22","m":"2042-06-23","s":"d"},{"n":"599","c":11.15,"t":15,"a":"2022-06-08","m":"2037-06-09","s":"d"},{"n":"598","c":8.6,"t":5,"a":"2022-05-25","m":"2027-05-26","s":"d"},{"n":"597","c":12.56,"t":25,"a":"2022-05-11","m":"2047-05-12","s":"d"},{"n":"596","c":9.48,"t":7,"a":"2022-04-27","m":"2029-04-28","s":"d"},{"n":"576","c":12.1,"t":20,"a":"2022-04-13","m":"2042-04-14","s":"d"},{"n":"574","c":13.5,"t":15,"a":"2021-10-27","m":"2036-10-28","s":"d"},{"n":"573","c":15.95,"t":25,"a":"2021-10-13","m":"2046-10-14","s":"d"},{"n":"572","c":11.44,"t":10,"a":"2021-09-29","m":"2031-09-30","s":"d"},{"n":"571","c":9.18,"t":5,"a":"2021-09-15","m":"2026-09-16","s":"d"},{"n":"570","c":13.5,"t":15,"a":"2021-09-01","m":"2036-09-02","s":"d"},{"n":"569","c":10.08,"t":7,"a":"2021-08-18","m":"2028-08-19","s":"d"},{"n":"568","c":15.95,"t":25,"a":"2021-08-04","m":"2046-08-05","s":"d"},{"n":"566","c":15.49,"t":20,"a":"2021-07-06","m":"2041-07-07","s":"d"},{"n":"564","c":13.5,"t":15,"a":"2021-06-02","m":"2036-06-03","s":"d"},{"n":"563","c":15.49,"t":20,"a":"2021-05-19","m":"2041-05-20","s":"d"},{"n":"562","c":10.08,"t":7,"a":"2021-05-05","m":"2028-05-06","s":"d"},{"n":"561","c":15.95,"t":25,"a":"2021-04-21","m":"2046-04-22","s":"d"},{"n":"559","c":11.44,"t":10,"a":"2021-03-24","m":"2031-03-25","s":"d"},{"n":"557","c":13.5,"t":15,"a":"2021-02-24","m":"2036-02-25","s":"d"},{"n":"556","c":15.49,"t":20,"a":"2021-02-10","m":"2041-02-11","s":"d"},{"n":"555","c":13.5,"t":15,"a":"2021-01-27","m":"2036-01-28","s":"d"},{"n":"553","c":11.44,"t":10,"a":"2020-12-30","m":"2030-12-31","s":"d"},{"n":"552","c":15.49,"t":20,"a":"2020-12-16","m":"2040-12-17","s":"d"},{"n":"551","c":13.5,"t":15,"a":"2020-12-02","m":"2035-12-03","s":"d"},{"n":"550","c":11.44,"t":10,"a":"2020-11-18","m":"2030-11-19","s":"d"},{"n":"549","c":15.49,"t":20,"a":"2020-11-04","m":"2040-11-05","s":"d"},{"n":"548","c":10.08,"t":7,"a":"2020-10-21","m":"2027-10-22","s":"d"},{"n":"544","c":15.49,"t":20,"a":"2020-09-23","m":"2040-09-24","s":"d"},{"n":"543","c":13.5,"t":15,"a":"2020-09-09","m":"2035-09-10","s":"d"},{"n":"542","c":11.44,"t":10,"a":"2020-08-26","m":"2030-08-27","s":"d"},{"n":"540","c":15.49,"t":20,"a":"2020-07-29","m":"2040-07-30","s":"d"},{"n":"539","c":13.5,"t":15,"a":"2020-07-15","m":"2035-07-16","s":"d"},{"n":"538","c":11.44,"t":10,"a":"2020-07-01","m":"2030-07-02","s":"d"},{"n":"536","c":13.5,"t":15,"a":"2020-06-03","m":"2035-06-04","s":"d"},{"n":"535","c":15.49,"t":20,"a":"2020-05-20","m":"2040-05-21","s":"d"},{"n":"534","c":10.08,"t":7,"a":"2020-05-06","m":"2027-05-07","s":"d"},{"n":"533","c":15.49,"t":20,"a":"2020-04-22","m":"2040-04-23","s":"d"},{"n":"532","c":13.5,"t":15,"a":"2020-04-08","m":"2035-04-09","s":"d"},{"n":"531","c":11.44,"t":10,"a":"2020-03-25","m":"2030-03-26","s":"d"},{"n":"529","c":13.5,"t":15,"a":"2020-02-26","m":"2035-02-27","s":"d"},{"n":"528","c":15.49,"t":20,"a":"2020-02-12","m":"2040-02-13","s":"d"},{"n":"527","c":13.5,"t":15,"a":"2020-01-29","m":"2035-01-30","s":"d"},{"n":"524","c":11.44,"t":10,"a":"2019-12-31","m":"2030-01-01","s":"d"},{"n":"523","c":15.49,"t":20,"a":"2019-12-18","m":"2039-12-19","s":"d"},{"n":"522","c":13.5,"t":15,"a":"2019-12-04","m":"2034-12-05","s":"d"},{"n":"521","c":11.44,"t":10,"a":"2019-11-20","m":"2029-11-21","s":"v"},{"n":"520","c":15.49,"t":20,"a":"2019-11-06","m":"2039-11-07","s":"d"},{"n":"519","c":10.08,"t":7,"a":"2019-10-23","m":"2026-10-24","s":"d"},{"n":"517","c":15.49,"t":20,"a":"2019-09-25","m":"2039-09-26","s":"d"},{"n":"516","c":13.5,"t":15,"a":"2019-09-11","m":"2034-09-12","s":"d"},{"n":"515","c":11.44,"t":10,"a":"2019-08-28","m":"2029-08-29","s":"d"},{"n":"513","c":15.49,"t":20,"a":"2019-07-31","m":"2039-08-01","s":"d"},{"n":"512","c":13.5,"t":15,"a":"2019-07-17","m":"2034-07-18","s":"d"},{"n":"507","c":11.44,"t":10,"a":"2019-07-03","m":"2029-07-04","s":"d"},{"n":"506","c":13.5,"t":15,"a":"2019-06-19","m":"2034-06-20","s":"d"},{"n":"505","c":11.44,"t":10,"a":"2019-06-03","m":"2029-06-04","s":"d"},{"n":"504","c":15.49,"t":20,"a":"2019-05-22","m":"2039-05-22","s":"v"},{"n":"500","c":13.5,"t":15,"a":"2019-03-27","m":"2034-03-28","s":"d"},{"n":"499","c":11.44,"t":10,"a":"2019-03-13","m":"2029-03-14","s":"d"},{"n":"498","c":15.49,"t":20,"a":"2019-02-27","m":"2039-02-28","s":"d"},{"n":"493","c":13.5,"t":15,"a":"2019-01-02","m":"2034-01-03","s":"d"},{"n":"492","c":11.44,"t":10,"a":"2018-12-19","m":"2028-12-20","s":"d"},{"n":"491","c":15.49,"t":20,"a":"2018-12-05","m":"2038-12-06","s":"d"},{"n":"487","c":13.5,"t":15,"a":"2018-10-10","m":"2033-10-11","s":"d"},{"n":"486","c":11.44,"t":10,"a":"2018-09-26","m":"2028-09-27","s":"d"},{"n":"485","c":15.49,"t":20,"a":"2018-09-12","m":"2038-09-13","s":"d"},{"n":"481","c":13.5,"t":15,"a":"2018-07-18","m":"2033-07-19","s":"d"},{"n":"480","c":11.44,"t":10,"a":"2018-07-04","m":"2028-07-05","s":"d"},{"n":"479","c":13.5,"t":15,"a":"2018-06-20","m":"2033-06-21","s":"d"},{"n":"477","c":11.44,"t":10,"a":"2018-05-23","m":"2028-05-24","s":"d"},{"n":"474","c":13.5,"t":15,"a":"2018-04-11","m":"2033-04-12","s":"d"},{"n":"472","c":11.44,"t":10,"a":"2018-03-14","m":"2028-03-15","s":"d"},{"n":"469","c":13.5,"t":15,"a":"2018-01-31","m":"2033-02-01","s":"d"},{"n":"467","c":11.44,"t":10,"a":"2018-01-03","m":"2028-01-04","s":"d"},{"n":"464","c":13.5,"t":15,"a":"2017-11-22","m":"2032-11-23","s":"d"},{"n":"462","c":11.44,"t":10,"a":"2017-10-25","m":"2027-10-26","s":"d"},{"n":"459","c":13.5,"t":15,"a":"2017-09-13","m":"2032-09-14","s":"d"},{"n":"457","c":11.44,"t":10,"a":"2017-08-16","m":"2027-08-17","s":"d"},{"n":"454","c":13.5,"t":15,"a":"2017-07-05","m":"2032-07-06","s":"d"},{"n":"452","c":11.44,"t":10,"a":"2017-06-07","m":"2027-06-08","s":"d"},{"n":"447","c":13.5,"t":15,"a":"2017-04-25","m":"2032-04-26","s":"d"},{"n":"445","c":11.44,"t":10,"a":"2017-03-29","m":"2027-03-30","s":"d"},{"n":"442","c":13.5,"t":15,"a":"2017-02-15","m":"2032-02-16","s":"d"},{"n":"440","c":11.44,"t":10,"a":"2017-01-18","m":"2027-01-19","s":"d"},{"n":"437","c":13.5,"t":15,"a":"2016-12-07","m":"2031-12-08","s":"d"},{"n":"435","c":11.44,"t":10,"a":"2016-11-09","m":"2026-11-10","s":"d"},{"n":"432","c":13.5,"t":15,"a":"2016-09-28","m":"2031-09-29","s":"d"},{"n":"427","c":13.5,"t":15,"a":"2016-07-20","m":"2031-07-21","s":"d"},{"n":"419","c":13.5,"t":15,"a":"2016-05-11","m":"2031-05-12","s":"d"},{"n":"414","c":13.5,"t":15,"a":"2016-03-02","m":"2031-03-03","s":"d"},{"n":"409","c":13.5,"t":15,"a":"2015-12-22","m":"2030-12-23","s":"d"},{"n":"404","c":13.5,"t":15,"a":"2015-10-13","m":"2030-10-14","s":"d"},{"n":"399","c":13.5,"t":15,"a":"2015-08-05","m":"2030-08-06","s":"d"},{"n":"393","c":13.5,"t":15,"a":"2015-05-13","m":"2030-05-14","s":"d"},{"n":"388","c":13.5,"t":15,"a":"2015-03-04","m":"2030-03-05","s":"d"},{"n":"383","c":13.5,"t":15,"a":"2014-12-17","m":"2029-12-18","s":"d"},{"n":"378","c":13.5,"t":15,"a":"2014-10-15","m":"2029-10-16","s":"d"},{"n":"372","c":13.5,"t":15,"a":"2014-08-06","m":"2029-08-07","s":"d"},{"n":"365","c":13.5,"t":15,"a":"2014-04-30","m":"2029-05-01","s":"d"},{"n":"360","c":13.5,"t":15,"a":"2014-02-19","m":"2029-02-20","s":"d"},{"n":"353","c":13.5,"t":15,"a":"2013-11-13","m":"2028-11-14","s":"d"}];
+
+  /* ---------- date helpers (all UTC) ---------- */
+  function parseISO(s){ if(!s) return NaN; const p=s.split('-').map(Number); if(p.length!==3||p.some(isNaN)) return NaN; return Date.UTC(p[0],p[1]-1,p[2]); }
+  function toISO(t){ const d=new Date(t); return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; }
+  function daysInMonth(y,m){ return new Date(Date.UTC(y,m+1,0)).getUTCDate(); }
+  function addMonths(t,n){ const d=new Date(t); let y=d.getUTCFullYear(), m=d.getUTCMonth()+n, day=d.getUTCDate();
+    y+=Math.floor(m/12); m=((m%12)+12)%12; day=Math.min(day,daysInMonth(y,m)); return Date.UTC(y,m,day); }
+  function fmtDate(t){ const d=new Date(t); return `${String(d.getUTCDate()).padStart(2,'0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
+  function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+  /* ---------- bond maths (matches Excel PRICE/YIELD, basis 1) ---------- */
+  function schedule(settle, maturity, f){
+    const step=12/f; let i=0, next=maturity, prev=addMonths(maturity,-step);
+    while(prev>settle){ i++; next=prev; prev=addMonths(maturity,-step*(i+1)); }
+    const N=i+1, E=(next-prev)/DAY, A=(settle-prev)/DAY, DSC=E-A;
+    const dates=[]; for(let k=0;k<N;k++) dates.push(addMonths(maturity,-step*(N-1-k)));
+    return {prev,next,N,E,A,DSC,dates};
+  }
+  function cleanFromYield(y,s,rate,f,R){
+    const c=100*rate/f, w=s.DSC/s.E;
+    if(s.N===1) return (R+c)/(1+w*y/f) - c*s.A/s.E;
+    const v=1+y/f; let pv=R/Math.pow(v,s.N-1+w);
+    for(let k=1;k<=s.N;k++) pv+=c/Math.pow(v,k-1+w);
+    return pv - c*s.A/s.E;
+  }
+  function yieldFromClean(p,s,rate,f,R){
+    let lo=-0.99*f, hi=5;
+    for(let i=0;i<200;i++){ const mid=(lo+hi)/2; if(cleanFromYield(mid,s,rate,f,R)>p) lo=mid; else hi=mid; if(hi-lo<1e-13) break; }
+    return (lo+hi)/2;
+  }
+  function cashflows(y,s,rate,f,R){
+    const c=100*rate/f, w=s.DSC/s.E, v=1+y/f; const rows=[]; let pv=0,tpv=0;
+    for(let k=1;k<=s.N;k++){ const cf=c+(k===s.N?R:0); const df=1/Math.pow(v,k-1+w); const p=cf*df; pv+=p; tpv+=((k-1+w)/f)*p; rows.push({date:s.dates[k-1],cf,pv:p}); }
+    const mac=tpv/pv; return {rows,dirty:pv,mac,mod:mac/(1+y/f)};
+  }
+
+  /* ---------- formatting ---------- */
+  const num = (x,d)=> isFinite(x) ? x.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+  const pct = x => num(x*100,4)+'%';
+  function readNum(id){ const v=$(id).value.replace(/[,\s]/g,''); return v===''?NaN:Number(v); }
+  const fmtC = c => (Math.round(c*100)/100).toString();
+
+  /* ---------- bond library ---------- */
+  let custom = {};
+  let storageOK = true;
+  try{ const raw=localStorage.getItem(STORE_KEY); if(raw) custom=JSON.parse(raw)||{}; }catch(e){ storageOK=false; custom={}; }
+  function persist(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(custom)); storageOK=true; }catch(e){ storageOK=false; } refreshBackup(); }
+  function library(){
+    const map={}; SEED.forEach(b=>map[b.n]={...b});
+    Object.keys(custom).forEach(k=>{ map[k]={...custom[k], s:'u'}; });
+    return Object.values(map).sort((a,b)=>Number(b.n)-Number(a.n));
+  }
+  function bondLabel(b){ return `${b.n} · ${fmtC(b.c)}% ${b.t?b.t+'-yr':''}`.trim(); }
+  function search(q){
+    q=q.trim().toLowerCase(); const all=library();
+    if(!q) return all.slice(0,8);
+    return all.filter(b=>{
+      const hay=[b.n, fmtC(b.c), fmtC(b.c)+'%', b.t+'-yr', b.t+'yr', b.t+' yr', b.t+' year', fmtDate(parseISO(b.m)).toLowerCase(), b.m].join(' ');
+      return hay.includes(q);
+    }).slice(0,12);
+  }
+  let chosen=null;
+  function renderHits(q){
+    const hits=search(q); const box=$('hits'); box.innerHTML='';
+    if(!hits.length){ box.innerHTML='<div class="none">No bond matches. Use “Add a bond” below to create it.</div>'; box.hidden=false; return; }
+    hits.forEach(b=>{ const btn=document.createElement('button'); btn.type='button';
+      btn.innerHTML=`<b>${b.n}</b> · ${fmtC(b.c)}% ${b.t?b.t+'-year':''}<small>Matures ${fmtDate(parseISO(b.m))}${b.a?' · auctioned '+fmtDate(parseISO(b.a)):''}${b.s==='u'?' · yours':''}</small>`;
+      btn.addEventListener('click',()=>selectBond(b)); box.appendChild(btn); });
+    box.hidden=false;
+  }
+  function selectBond(b){
+    chosen=b; $('hits').hidden=true; $('search').value='';
+    $('name').value=b.n; $('maturity').value=b.m; $('coupon').value=fmtC(b.c); $('freq').value=String(b.f||2);
+    lock(true); showChip(); calc();
+  }
+  function showChip(){
+    if(!chosen){ $('chip').hidden=true; return; }
+    $('chipTitle').textContent=`${chosen.n} · ${fmtC(chosen.c)}%${chosen.t?' '+chosen.t+'-year':''}`;
+    $('chipNote').textContent=`Matures ${fmtDate(parseISO(chosen.m))}${chosen.s==='u'?' · added by you':''}`; $('editBtn').hidden = chosen.s!=='u'; $('chip').hidden=false;
+  }
+  const BOND_FIELDS=['name','freq','maturity','coupon'];
+  function lock(on){ BOND_FIELDS.forEach(id=>$(id).disabled=on); $('bondFields').classList.toggle('locked',on); }
+  function detach(){ chosen=null; $('chip').hidden=true; lock(false); }
+
+  /* add / edit form */
+  let editing=null;
+  function openForm(b){
+    editing=b||null; $('bondForm').hidden=false; $('fErr').textContent='';
+    $('formTitle').textContent=b?`Edit bond ${b.n}`:'Add a new bond';
+    $('fNo').value=b?b.n:''; $('fCoupon').value=b?fmtC(b.c):''; $('fTenor').value=b&&b.t?b.t:'';
+    $('fFreq').value=b?String(b.f||2):'2'; $('fAuction').value=b&&b.a?b.a:''; $('fMaturity').value=b?b.m:'';
+    $('deleteBtn').hidden=!(b&&custom[b.n]);
+    $('bondForm').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function closeForm(){ $('bondForm').hidden=true; editing=null; }
+  function saveForm(){
+    const n=$('fNo').value.trim(), c=readNum('fCoupon'), t=readNum('fTenor'), f=Number($('fFreq').value);
+    const a=$('fAuction').value, mIn=$('fMaturity').value;
+    if(!n){ $('fErr').textContent='Enter the issue number.'; return; }
+    if(!isFinite(c)||c<0||c>100){ $('fErr').textContent='Enter the coupon as a percentage, e.g. 11.25'; return; }
+    let m=mIn;
+    if(!m){
+      if(!a||!isFinite(t)||t<=0){ $('fErr').textContent='Enter a maturity date, or an auction date and tenor so it can be worked out.'; return; }
+      const settle=parseISO(a)+DAY; const d=new Date(settle); m=toISO(Date.UTC(d.getUTCFullYear()+Math.round(t),d.getUTCMonth(),Math.min(d.getUTCDate(),daysInMonth(d.getUTCFullYear()+Math.round(t),d.getUTCMonth()))));
+    }
+    if(SEED.some(b=>b.n===n)){ $('fErr').textContent=`Issue no. ${n} is already in the Bank of Tanzania list and cannot be changed.`; return; }
+    if(editing && editing.n!==n) delete custom[editing.n];
+    custom[n]={n,c,t:isFinite(t)?t:undefined,f,a:a||undefined,m};
+    persist(); closeForm(); selectBond({...custom[n],s:'u'});
+  }
+  function deleteForm(){ if(!editing) return; delete custom[editing.n]; persist(); closeForm(); detach(); calc(); }
+
+  function refreshBackup(){
+    const keys=Object.keys(custom);
+    $('backup').value = keys.length ? JSON.stringify(custom,null,1) : '';
+    $('storeNote').textContent = storageOK ? (keys.length?`${keys.length} bond${keys.length>1?'s':''} saved in this browser.`:'') : 'This browser is not letting the page save — added bonds will be lost when you close it. Copy the list above to keep them.';
+  }
+  function importList(){
+    try{ const obj=JSON.parse($('backup').value); if(!obj||typeof obj!=='object') throw 0;
+      let n=0; Object.keys(obj).forEach(k=>{ const b=obj[k]; if(b&&b.n&&isFinite(b.c)&&b.m){ custom[k]={n:String(b.n),c:Number(b.c),t:b.t,f:b.f||2,a:b.a,m:b.m}; n++; } });
+      persist(); $('storeNote').textContent=`Imported ${n} bond${n===1?'':'s'}.`;
+    }catch(e){ $('storeNote').textContent='That text is not a valid list. Paste exactly what “Copy list” produced.'; }
+  }
+
+  /* ---------- state ---------- */
+  let mode='yield'; let priceType='clean'; let last=null;
+
+  function setMode(m){ mode=m;
+    $('modeYield').setAttribute('aria-pressed', m==='yield'); $('modePrice').setAttribute('aria-pressed', m==='price');
+    $('inPrice').hidden = m!=='yield'; $('inPriceType').hidden = m!=='yield'; $('inYield').hidden = m!=='price';
+    calc();
+  }
+  function setPriceType(t){ priceType=t; $('ptClean').setAttribute('aria-pressed',t==='clean'); $('ptDirty').setAttribute('aria-pressed',t==='dirty'); calc(); }
+  function show(msg){ $('msg').textContent=msg||''; }
+  function blank(){ last=null; $('result').classList.add('off'); $('bigValue').textContent='—';
+    ['rFirst','rAccr','rDirty','rAmount','dPrev','dNext','dDays','dN','dYrs','dCpn','dMac','dMod','dDv01','dDv01F','dUp','dDown'].forEach(id=>$(id).textContent='—');
+    $('sched').innerHTML=''; $('schedNote').textContent=''; }
+
+  function calc(){
+    const settle=parseISO($('settle').value), maturity=parseISO($('maturity').value);
+    const rate=readNum('coupon')/100, f=Number($('freq').value), R=readNum('redemption');
+    const face=readNum('face'), basis=$('accrBasis').value;
+    if(isNaN(settle)||isNaN(maturity)||isNaN(rate)){ blank(); show(''); return; }
+    if(rate<0||rate>1){ blank(); show('Coupon rate looks wrong — enter it as a percentage, e.g. 12.25'); return; }
+    if(maturity<=settle){ blank(); show('Maturity date must be after the settlement date'); return; }
+    if(!isFinite(R)||R<=0){ blank(); show('Redemption per 100 must be a positive number (see Settings)'); return; }
+
+    const s=schedule(settle,maturity,f);
+    const c=100*rate/f;
+    const accrued = basis==='act365' ? 100*rate*s.A/365 : c*s.A/s.E;
+
+    let y, clean, entered;
+    if(mode==='yield'){
+      const p=readNum('price');
+      if(isNaN(p)){ blank(); show(''); return; }
+      if(p<=0){ blank(); show('Price must be greater than 0'); return; }
+      clean = priceType==='dirty' ? p-accrued : p;
+      y=yieldFromClean(clean,s,rate,f,R); entered=`Price entered ${num(p,4)} (${priceType})`;
+    } else {
+      const yin=readNum('yield');
+      if(isNaN(yin)){ blank(); show(''); return; }
+      y=yin/100; clean=cleanFromYield(y,s,rate,f,R); entered=`Yield entered ${num(yin,4)}%`;
+    }
+    const dirty=clean+accrued;
+    const cfs=cashflows(y,s,rate,f,R);
+    const dv01=cfs.mod*dirty/10000;
+    const up=cleanFromYield(y+0.01,s,rate,f,R), down=cleanFromYield(y-0.01,s,rate,f,R);
+
+    $('result').classList.remove('off');
+    if(mode==='yield'){ $('leadLabel').textContent='Yield to maturity'; $('bigValue').textContent=pct(y); $('rFirstLabel').textContent='Clean price'; $('rFirst').textContent=num(clean,4); }
+    else { $('leadLabel').textContent='Clean price per 100'; $('bigValue').textContent=num(clean,4); $('rFirstLabel').textContent='Yield to maturity'; $('rFirst').textContent=pct(y); }
+    $('rAccr').innerHTML=num(accrued,4)+` <small>${s.A} days · ${basis==='act365'?'Act/365':'Act/Act'}</small>`;
+    $('rDirty').textContent=num(dirty,4);
+    $('rAmount').textContent = isFinite(face)&&face>0 ? 'TZS '+num(face*dirty/100,2) : 'enter face value';
+    show((y<-0.5||y>1) ? 'Yield is outside a sensible range — check the price, coupon and dates.' : '');
+
+    $('dPrev').textContent=fmtDate(s.prev); $('dNext').textContent=fmtDate(s.next);
+    $('dDays').textContent=`${s.A} / ${s.E}`; $('dN').textContent=s.N;
+    const yrs=(maturity-settle)/DAY/365.25; $('dYrs').textContent=num(yrs,2);
+    $('dCpn').textContent=num(c,4);
+    $('dMac').textContent=num(cfs.mac,4)+' yrs'; $('dMod').textContent=num(cfs.mod,4)+' yrs';
+    $('dDv01').textContent=num(dv01,6);
+    $('dDv01F').textContent = isFinite(face)&&face>0 ? 'TZS '+num(dv01*face/100,2) : '—';
+    $('dUp').textContent=num(up,4); $('dDown').textContent=num(down,4);
+    $('sched').innerHTML=cfs.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${fmtDate(r.date)}</td><td>${num(r.cf,4)}</td><td>${num(r.pv,4)}</td></tr>`).join('');
+    $('schedNote').textContent=`Sum of PV = ${num(cfs.dirty,4)} per 100 (dirty price on Actual/Actual).`;
+
+    last={name:$('name').value.trim(),tenor:chosen&&chosen.t?chosen.t:null,src:chosen?chosen.s:null,maturity,settle,rate,f,y,clean,accrued,dirty,face,A:s.A,E:s.E,prev:s.prev,next:s.next,N:s.N,basis,mac:cfs.mac,mod:cfs.mod,dv01,up,down,rows:cfs.rows,pvSum:cfs.dirty,yrs,entered,mode,priceType};
+  }
+
+  function summaryText(){
+    if(!last) return '';
+    const freqWord={1:'annual',2:'semi-annual',4:'quarterly'}[last.f]||`${last.f}x a year`;
+    const L=[];
+    L.push(`Bond ${last.name||'—'}${last.tenor?' ('+fmtC(last.rate*100)+'% '+last.tenor+'-yr)':''} | Coupon ${fmtC(last.rate*100)}% ${freqWord} | Matures ${fmtDate(last.maturity)} (${num(last.yrs,1)} yrs to run)`);
+    L.push(`Settlement ${fmtDate(last.settle)} | ${last.entered}`);
+    L.push(`YTM ${pct(last.y)}`);
+    L.push(`Clean ${num(last.clean,4)} | Accrued ${num(last.accrued,4)} (${last.A} days, ${last.basis==='act365'?'Act/365':'Act/Act'}) | Dirty ${num(last.dirty,4)}`);
+    if(isFinite(last.face)&&last.face>0) L.push(`Face TZS ${num(last.face,0)} | Settlement amount TZS ${num(last.face*last.dirty/100,2)}`);
+    L.push(`Modified duration ${num(last.mod,2)} yrs`);
+    L.push('TZ Bond Calculator © 2026 The Ticker TZ · kelvinlangley.github.io/The-Ticker');
+    return L.join('\n');
+  }
+  function copyText(t,btn,label){
+    if(!t) return;
+    const done=()=>{ btn.textContent='Copied'; setTimeout(()=>btn.textContent=label,1500); };
+    const fb=()=>{ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){} document.body.removeChild(ta); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done).catch(fb); } else fb();
+  }
+
+
+
+  /* ---------- tiny PDF writer (A4, standard fonts, no external library) ---------- */
+  const AFM={
+    H:[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584],
+    HB:[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584],
+    TB:[250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520],
+    T:[250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541]};
+  const FONTS={'helvetica:normal':['F1','Helvetica','H'],'helvetica:bold':['F2','Helvetica-Bold','HB'],'times:bold':['F3','Times-Bold','TB'],'times:normal':['F4','Times-Roman','T']};
+  class MiniPDF{
+    constructor(){ this.pages=[]; this.images=[]; this.addPage(); this.font='helvetica:normal'; this.size=10; this.fill=[0,0,0]; this.stroke=[0,0,0]; this.lw=.2; }
+    addPage(){ this.pages.push([]); this.cur=this.pages.length-1; }
+    getNumberOfPages(){ return this.pages.length; } setPage(n){ this.cur=n-1; }
+    _mm(v){ return v*72/25.4; } _y(v){ return 841.89-this._mm(v); } _n(v){ return (Math.round(v*100)/100).toString(); }
+    _c(c){ return c.map(v=>(v/255).toFixed(3)).join(' '); }
+    setFillColor(r,g,b){ this.fill=[r,g,b]; } setTextColor(r,g,b){ this.fill=[r,g,b]; } setDrawColor(r,g,b){ this.stroke=[r,g,b]; } setLineWidth(w){ this.lw=w; }
+    setFont(f,st){ this.font=`${f}:${st||'normal'}`; if(!FONTS[this.font]) this.font='helvetica:normal'; } setFontSize(s){ this.size=s; }
+    _clean(t){ return String(t).replace(/−/g,'-').replace(/[–—]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?'); }
+    _w(t){ const tab=AFM[FONTS[this.font][2]]; let w=0; for(const ch of t){ const c=ch.charCodeAt(0); w+= (c>=32&&c<=126)?tab[c-32]:556; } return w/1000*this.size/72*25.4; }
+    _esc(t){ return t.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)'); }
+    text(t,x,y,o){ o=o||{}; t=this._clean(t); const lines=[];
+      if(o.maxWidth){ let cur=''; t.split(' ').forEach(w=>{ const tryS=cur?cur+' '+w:w; if(this._w(tryS)>o.maxWidth&&cur){ lines.push(cur); cur=w; } else cur=tryS; }); lines.push(cur); } else lines.push(t);
+      lines.forEach((ln,i)=>{ let xx=x; const w=this._w(ln); if(o.align==='right') xx=x-w; else if(o.align==='center') xx=x-w/2;
+        this.pages[this.cur].push(`BT /${FONTS[this.font][0]} ${this._n(this.size)} Tf ${this._c(this.fill)} rg 1 0 0 1 ${this._n(this._mm(xx))} ${this._n(this._y(y+i*this.size*0.42))} Tm (${this._esc(ln)}) Tj ET`); }); }
+    line(x1,y1,x2,y2){ this.pages[this.cur].push(`${this._n(this._mm(this.lw))} w ${this._c(this.stroke)} RG ${this._n(this._mm(x1))} ${this._n(this._y(y1))} m ${this._n(this._mm(x2))} ${this._n(this._y(y2))} l S`); }
+    rect(x,y,w,h,st){ this.pages[this.cur].push(`${this._c(this.fill)} rg ${this._n(this._mm(x))} ${this._n(this._y(y+h))} ${this._n(this._mm(w))} ${this._n(this._mm(h))} re ${st==='F'?'f':'S'}`); }
+    roundedRect(x,y,w,h,r,r2,st){ const m=v=>this._n(this._mm(v)), Y=v=>this._n(this._y(v)), k=0.5523*r;
+      const p=[`${this._c(this.fill)} rg`,`${m(x+r)} ${Y(y)} m`,`${m(x+w-r)} ${Y(y)} l`,`${m(x+w-r+k)} ${Y(y)} ${m(x+w)} ${Y(y+r-k)} ${m(x+w)} ${Y(y+r)} c`,
+        `${m(x+w)} ${Y(y+h-r)} l`,`${m(x+w)} ${Y(y+h-r+k)} ${m(x+w-r+k)} ${Y(y+h)} ${m(x+w-r)} ${Y(y+h)} c`,`${m(x+r)} ${Y(y+h)} l`,
+        `${m(x+r-k)} ${Y(y+h)} ${m(x)} ${Y(y+h-r+k)} ${m(x)} ${Y(y+h-r)} c`,`${m(x)} ${Y(y+r)} l`,`${m(x)} ${Y(y+r-k)} ${m(x+r-k)} ${Y(y)} ${m(x+r)} ${Y(y)} c`,'h',st==='F'?'f':'S'];
+      this.pages[this.cur].push(p.join(' ')); }
+    /* a JPEG, given as a binary string, placed by its top-left corner in mm */
+    addImage(bin,pxW,pxH){ this.images.push({bin,pxW,pxH}); return 'Im'+(this.images.length-1); }
+    image(name,x,y,w,h){ this.pages[this.cur].push(`q ${this._n(this._mm(w))} 0 0 ${this._n(this._mm(h))} ${this._n(this._mm(x))} ${this._n(this._y(y+h))} cm /${name} Do Q`); }
+    output(){ const objs=[]; const add=o=>{ objs.push(o); return objs.length; };
+      const cat=add(null), pages=add(null);
+      const fontIds={}; Object.values(FONTS).forEach(f=>{ fontIds[f[0]]=add(`<< /Type /Font /Subtype /Type1 /BaseFont /${f[1]} /Encoding /WinAnsiEncoding >>`); });
+      const fontRes='<< '+Object.entries(fontIds).map(([k,v])=>`/${k} ${v} 0 R`).join(' ')+' >>';
+      const imgRes=this.images.length ? ' /XObject << '+this.images.map((im,i)=>`/Im${i} ${add(`<< /Type /XObject /Subtype /Image /Width ${im.pxW} /Height ${im.pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bin.length} >>\nstream\n${im.bin}\nendstream`)} 0 R`).join(' ')+' >>' : '';
+      const kids=[];
+      this.pages.forEach(ops=>{ const content=ops.join('\n'); const cid=add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+        kids.push(add(`<< /Type /Page /Parent ${pages} 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font ${fontRes}${imgRes} >> /Contents ${cid} 0 R >>`)); });
+      const info=add('<< /Title (Treasury Bond Valuation) /Author (The Ticker TZ) /Creator (TZ Bond Calculator, copyright 2026 The Ticker TZ) /Producer (The Ticker TZ) >>');
+      objs[cat-1]=`<< /Type /Catalog /Pages ${pages} 0 R >>`; objs[pages-1]=`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`;
+      let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const offs=[];
+      objs.forEach((o,i)=>{ offs.push(out.length); out+=`${i+1} 0 obj\n${o}\nendobj\n`; });
+      const xref=out.length; out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('');
+      out+=`trailer\n<< /Size ${objs.length+1} /Root ${cat} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+      const bytes=new Uint8Array(out.length); for(let i=0;i<out.length;i++) bytes[i]=out.charCodeAt(i)&255;
+      return new Blob([bytes],{type:'application/pdf'}); }
+  }
+
+  /* ---------- The Ticker TZ signature: on the page, and drawn for the head and foot of every PDF page ---------- */
+  const TK={line:'© 2026 The Ticker TZ · All rights reserved.', site:'kelvinlangley.github.io/The-Ticker'};
+  function ensureBrand(){
+    let f=$('tkFoot');
+    if(!f){ f=document.createElement('footer'); f.id='tkFoot'; f.className='sitefoot'; document.body.appendChild(f); }
+    if(!f.querySelector('.wordmark')||f.textContent.indexOf('The Ticker TZ')===-1) f.innerHTML='<div class="foot-in"><span class="wordmark" role="img" aria-label="The Ticker"><span class="the">The</span><span class="tick">ticker<span class="tris" aria-hidden="true"><svg viewBox="0 0 26 24"><path d="M13 2 L24 22 L2 22 Z" fill="none" stroke="#1fbf75" stroke-width="4" stroke-linejoin="round"/></svg><svg viewBox="0 0 26 24"><path d="M13 22 L2 2 L24 2 Z" fill="none" stroke="#e8453c" stroke-width="4" stroke-linejoin="round"/></svg></span></span></span><div><p><b>TZ Bond Calculator</b> is a product of The Ticker TZ. Free to use as it is. It may not be sold, altered or rebranded without written permission.</p><p>For working purposes only; not investment advice and not an official contract note. Always confirm against the Bank of Tanzania tender document before dealing.</p><p>Policy rates, auction results, yields by tenor and the issuance calendar are on <a href="https://kelvinlangley.github.io/The-Ticker/">The Ticker portal</a>.</p></div></div><div class="foot-bar">© 2026 <b>The Ticker TZ</b> · All rights reserved.</div>';
+    f.hidden=false; f.style.display='';
+  }
+  function brandFontsReady(){
+    if(!document.fonts||!document.fonts.load) return Promise.resolve();
+    const want=['800 40px Poppins','500 12px Poppins','700 40px "IBM Plex Sans"','500 20px "IBM Plex Mono"','600 20px "IBM Plex Mono"'];
+    return Promise.race([Promise.all(want.map(f=>document.fonts.load(f).catch(()=>{}))), new Promise(res=>setTimeout(res,2500))]);
+  }
+  /* an espresso band, 210 mm wide, drawn at 8 px per mm and handed to the PDF as one JPEG so the brand type is exact */
+  function brandBand(kind, o){
+    const K=8, Wmm=210, Hmm=kind==='head'?40:15, cv=document.createElement('canvas'); cv.width=Wmm*K; cv.height=Hmm*K;
+    const g=cv.getContext('2d'); g.scale(K,K); g.textBaseline='alphabetic';
+    const SANS='"IBM Plex Sans", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif', MONO='"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace', POP='Poppins, "IBM Plex Sans", system-ui, sans-serif';
+    const INK='#f8f2e9', INK2='#c9b8a2', M=18, R=Wmm-M;
+    const gr=g.createLinearGradient(0,0,Wmm*0.7,Hmm); gr.addColorStop(0,'#3a2b1c'); gr.addColorStop(1,'#2c2015'); g.fillStyle=gr; g.fillRect(0,0,Wmm,Hmm);
+    function wordmark(x,base,size){
+      g.textAlign='left'; g.fillStyle=INK; g.font=`800 ${size}px ${POP}`; g.fillText('ticker',x,base);
+      const ww=g.measureText('ticker').width, the=size*0.235; let tx=x+size*0.1; const ty=base-size*0.92;
+      g.font=`500 ${the}px ${POP}`; for(const ch of 'The'){ g.fillText(ch,tx,ty); tx+=g.measureText(ch).width+the*0.52; }
+      const tw=size*0.41, th=size*0.375, mx=x+ww+size*0.22, pt=(px,py,ox)=>[ox+px/26*tw, base-th+py/24*th];
+      const tri=(ox,p,c)=>{ const a=pt(p[0],p[1],ox), b=pt(p[2],p[3],ox), d=pt(p[4],p[5],ox); g.strokeStyle=c; g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.lineTo(d[0],d[1]); g.closePath(); g.stroke(); };
+      g.lineJoin='round'; g.lineWidth=tw*4/26; tri(mx,[13,2,24,22,2,22],'#1fbf75'); tri(mx+tw+size*0.11,[13,22,2,2,24,2],'#e8453c'); g.lineJoin='miter';
+    }
+    function tracked(t,x,y,px,color,track,font){ g.font=`600 ${px}px ${font}`; g.fillStyle=color; g.textAlign='left'; let w=0; for(const ch of t) w+=g.measureText(ch).width+track; w-=track; let cx=x-w; for(const ch of t){ g.fillText(ch,cx,y); cx+=g.measureText(ch).width+track; } return w; }
+    if(kind==='head'){
+      wordmark(M,15.2,7.2);
+      const tw=tracked('BOND VALUATION',R-3.2,13.4,2.25,INK,0.42,MONO);
+      g.strokeStyle='rgba(248,242,233,.26)'; g.lineWidth=0.26; const bx=R-6.4-tw, by=9.2, bw=tw+6.4, bh=6.6, br=3.3;
+      g.beginPath(); g.moveTo(bx+br,by); g.arcTo(bx+bw,by,bx+bw,by+bh,br); g.arcTo(bx+bw,by+bh,bx,by+bh,br); g.arcTo(bx,by+bh,bx,by,br); g.arcTo(bx,by,bx+bw,by,br); g.closePath(); g.stroke();
+      g.strokeStyle='rgba(248,242,233,.14)'; g.beginPath(); g.moveTo(M,20.6); g.lineTo(R,20.6); g.stroke();
+      g.fillStyle=INK; g.textAlign='left'; g.font=`700 6.9px ${SANS}`; g.fillText('Treasury Bond Valuation',M,30.4);
+      g.fillStyle=INK2; g.font=`500 2.9px ${MONO}`; g.fillText(o.sub,M,36);
+      g.textAlign='right'; g.fillText(o.stamp,R,36);
+    } else {
+      wordmark(M,10.4,5.6);
+      g.textAlign='right'; g.fillStyle=INK; g.font=`500 2.65px ${MONO}`; g.fillText(TK.line,R,6.6);
+      g.fillStyle=INK2; g.font=`500 2.4px ${MONO}`; g.fillText(TK.site,R,10.7);
+    }
+    return {bin:atob(cv.toDataURL('image/jpeg',0.93).split(',')[1]), pxW:cv.width, pxH:cv.height, h:Hmm};
+  }
+
+  /* ---------- PDF summary ---------- */
+  function buildPDF(full){
+    if(!last) return null;
+    const doc=new MiniPDF();
+    const W=210, M=18, R=W-M; let y=0;
+    const espresso=[44,32,21], nude=[201,184,162], ink=[43,33,25], muted=[125,108,88], line=[228,216,199], cream=[248,242,233];
+    const freqWord={1:'annual',2:'semi-annual',4:'quarterly'}[last.f]||`${last.f}x a year`;
+    const now=new Date();
+    const stamp=`${String(now.getDate()).padStart(2,'0')} ${MONTHS[now.getMonth()]} ${now.getFullYear()}, ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const face=isFinite(last.face)&&last.face>0?last.face:null;
+    const LIMIT=262;
+
+    // head: the wordmark in its slot, then the title
+    const head=brandBand('head',{sub:`Bank of Tanzania Treasury bond  ·  ${last.mode==='yield'?'yield from price':'price from yield'}${full?'  ·  full report':''}`, stamp:`Prepared ${stamp}`});
+    doc.image(doc.addImage(head.bin,head.pxW,head.pxH),0,0,W,head.h);
+    y=52;
+
+    function heading(t){ doc.setFont('helvetica','bold'); doc.setFontSize(12.5); doc.setTextColor(...ink); doc.text(t,M,y);
+      doc.setDrawColor(...nude); doc.setLineWidth(.5); doc.line(M,y+1.8,M+10,y+1.8); y+=8; }
+    function kv(k,v,strong){ doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...muted); doc.text(k,M,y);
+      doc.setFont('helvetica',strong?'bold':'normal'); doc.setTextColor(...ink); doc.text(String(v),R,y,{align:'right'});
+      doc.setDrawColor(...line); doc.setLineWidth(.2); doc.line(M,y+2.2,R,y+2.2); y+=7; }
+    function gap(n){ y+=n||4; }
+    function pageBreakIf(need){ if(y+need>LIMIT){ doc.addPage(); y=20; } }
+
+    heading('Bond');
+    kv('Issue number', last.name||'—');
+    kv('Coupon', `${fmtC(last.rate*100)}% ${freqWord}`);
+    if(last.tenor) kv('Tenor', `${last.tenor} years`);
+    kv('Maturity date', `${fmtDate(last.maturity)}  (${num(last.yrs,2)} yrs to run)`);
+    kv('Last / next coupon date', `${fmtDate(last.prev)}  /  ${fmtDate(last.next)}`);
+    kv('Coupons remaining', last.N);
+    gap();
+    heading('Trade');
+    kv('Settlement date', fmtDate(last.settle));
+    kv('Face value', face?`TZS ${num(face,0)}`:'—');
+    kv(last.mode==='yield'?'Price entered':'Yield entered', last.entered.replace(/^(Price|Yield) entered /,''));
+    kv('Accrued interest day count', last.basis==='act365'?'Actual/365 (BoT tender convention)':'Actual/Actual');
+    gap(5);
+
+    // result box
+    doc.setFillColor(...espresso); doc.roundedRect(M,y,R-M,30,2.2,2.2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...nude);
+    doc.text(last.mode==='yield'?'YIELD TO MATURITY':'CLEAN PRICE PER TZS 100',M+6,y+9);
+    doc.setFont('helvetica','bold'); doc.setFontSize(25); doc.setTextColor(...cream);
+    doc.text(last.mode==='yield'?pct(last.y):num(last.clean,4),M+6,y+22);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...cream);
+    const rightLines=[
+      `${last.mode==='yield'?'Clean price':'Yield to maturity'}   ${last.mode==='yield'?num(last.clean,4):pct(last.y)}`,
+      `Accrued interest   ${num(last.accrued,4)}  (${last.A} days)`,
+      `Dirty price   ${num(last.dirty,4)}`];
+    rightLines.forEach((t,i)=>doc.text(t,R-6,y+9+i*6.5,{align:'right'}));
+    y+=38;
+
+    heading('Settlement');
+    kv('Clean price (per 100)', num(last.clean,4));
+    kv(`Accrued interest (per 100, ${last.A} days)`, num(last.accrued,4));
+    kv('Dirty price (per 100)', num(last.dirty,4), true);
+    if(face){
+      kv('Settlement amount', `TZS ${num(face*last.dirty/100,2)}`, true);
+      kv('   of which clean consideration', `TZS ${num(face*last.clean/100,2)}`);
+      kv('   of which accrued interest', `TZS ${num(face*last.accrued/100,2)}`);
+    }
+    if(full){
+    // risk and the schedule start a fresh page, so page one stays the summary
+    doc.addPage(); y=20;
+    heading('Risk measures');
+    kv('Macaulay duration', `${num(last.mac,4)} yrs`);
+    kv('Modified duration', `${num(last.mod,4)} yrs`);
+    kv('DV01 per 100', num(last.dv01,6));
+    if(face) kv('DV01 on face value', `TZS ${num(last.dv01*face/100,2)}`);
+    kv('Clean price if yield +100bp / −100bp', `${num(last.up,4)}  /  ${num(last.down,4)}`);
+    gap(6);
+
+    // schedule
+    heading('Coupon schedule');
+    const cols=[M, M+14, M+72, R-36, R];
+    const colHead=()=>{ doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...muted);
+      doc.text('#',cols[0],y); doc.text('Coupon date',cols[1],y); doc.text('Days from settlement',cols[2],y); doc.text('Cash flow /100',cols[3],y,{align:'right'}); doc.text('PV /100',cols[4],y,{align:'right'});
+      doc.setDrawColor(...line); doc.setLineWidth(.2); doc.line(M,y+1.8,R,y+1.8); y+=7; doc.setFont('helvetica','normal'); doc.setTextColor(...ink); };
+    colHead();
+    last.rows.forEach((r,i)=>{ if(y+6>LIMIT){ doc.addPage(); y=20; colHead(); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...ink);
+      doc.text(String(i+1),cols[0],y); doc.text(fmtDate(r.date),cols[1],y); doc.text(String(Math.round((r.date-last.settle)/DAY)),cols[2],y);
+      doc.text(num(r.cf,4),cols[3],y,{align:'right'}); doc.text(num(r.pv,4),cols[4],y,{align:'right'});
+      doc.setDrawColor(...line); doc.setLineWidth(.15); doc.line(M,y+1.6,R,y+1.6); y+=5.6; });
+    pageBreakIf(8); gap(2); doc.setFont('helvetica','bold'); doc.text(`Sum of present values  ${num(last.pvSum,4)} per 100`,R,y,{align:'right'});
+    }
+
+    // foot on every page: the small print, then the espresso band with the wordmark, its two marks and the (c) line
+    const foot=brandBand('foot'), footName=doc.addImage(foot.bin,foot.pxW,foot.pxH);
+    const n=doc.getNumberOfPages();
+    for(let p=1;p<=n;p++){ doc.setPage(p);
+      doc.setDrawColor(...line); doc.setLineWidth(.3); doc.line(M,267,R,267);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.6); doc.setTextColor(...muted);
+      doc.text('Price and yield on the Actual/Actual street convention (Excel PRICE / YIELD, basis 1). Accrued interest on the day count shown above. Coupon dates run backwards from maturity.',M,271.3,{maxWidth:R-M-24});
+      doc.text(`Page ${p} of ${n}`,R,271.3,{align:'right'});
+      doc.text('Generated with the TZ Bond Calculator, a product of The Ticker TZ. For working purposes only; not an official contract note.',M,278.2);
+      doc.image(footName,0,297-foot.h,W,foot.h);
+    }
+    return doc;
+  }
+  async function downloadPDF(full){
+    const btn=full?$('pdfFullBtn'):$('pdfBtn'); const label=btn.textContent; if(!last) return;
+    btn.disabled=true; btn.textContent='Preparing PDF…';
+    try{
+      await brandFontsReady(); const doc=buildPDF(full); const blob=doc.output();
+      const filename=`Bond-${(last.name||'summary').replace(/[^\w.-]+/g,'_')}-${toISO(last.settle)}${full?'-full':''}.pdf`;
+      let dl=null;
+      if(window.claude&&typeof window.claude.use==='function'){ try{ dl=await window.claude.use('downloads'); }catch(e){ dl=null; } }
+      if(dl){ await dl.save({filename,data:blob}); btn.textContent='Saved'; }
+      else { const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(()=>URL.revokeObjectURL(url),4000); btn.textContent='Downloading'; }
+    }catch(e){ btn.textContent = (e&&e.code==='declined') ? 'Download cancelled' : 'Could not save the PDF'; }
+    setTimeout(()=>{ btn.textContent=label; btn.disabled=false; },2000);
+  }
+
+  /* ---------- wiring ---------- */
+  $('modeYield').addEventListener('click',()=>setMode('yield'));
+  $('modePrice').addEventListener('click',()=>setMode('price'));
+  $('ptClean').addEventListener('click',()=>setPriceType('clean'));
+  $('ptDirty').addEventListener('click',()=>setPriceType('dirty'));
+  $('pdfBtn').addEventListener('click',()=>downloadPDF(false));
+  $('pdfFullBtn').addEventListener('click',()=>downloadPDF(true));
+  $('copyBtn').addEventListener('click',()=>copyText(summaryText(),$('copyBtn'),'Copy as text'));
+  $('copyListBtn').addEventListener('click',()=>copyText($('backup').value,$('copyListBtn'),'Copy list'));
+  $('importBtn').addEventListener('click',importList);
+  ['freq','maturity','coupon','settle','face','price','yield','accrBasis','redemption'].forEach(id=>{ $(id).addEventListener('input',calc); $(id).addEventListener('change',calc); });
+  $('name').addEventListener('input',calc);
+  $('face').addEventListener('blur',()=>{ const v=readNum('face'); if(isFinite(v)&&v>0) $('face').value=num(v,0); });
+
+  $('search').addEventListener('input',e=>renderHits(e.target.value));
+  $('search').addEventListener('focus',e=>renderHits(e.target.value));
+  document.addEventListener('click',e=>{ if(!e.target.closest('.search')) $('hits').hidden=true; });
+  $('search').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const h=search(e.target.value); if(h.length===1) selectBond(h[0]); } if(e.key==='Escape') $('hits').hidden=true; });
+  $('addBtn').addEventListener('click',()=>openForm(null));
+  $('editBtn').addEventListener('click',()=>openForm(chosen));
+  $('clearBtn').addEventListener('click',()=>{ detach(); $('name').focus(); });
+  $('saveBtn').addEventListener('click',saveForm);
+  $('cancelBtn').addEventListener('click',closeForm);
+  $('deleteBtn').addEventListener('click',deleteForm);
+
+  if(window.claude&&typeof window.claude.use==='function'){ try{ window.claude.use('downloads'); }catch(e){} }
+  /* defaults */
+  $('settle').value=todayISO();
+  refreshBackup();
+  $('foot').textContent=`${SEED.length} outstanding bonds from the Bank of Tanzania auction results (as at 16 Sep 2026). All maths runs on this device; nothing is sent anywhere.`;
+  selectBond(library()[0]);
+  ensureBrand();
+})();
+</script>
+</body>
+</html>
+
+</body></html>

@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <meta charset="utf-8">
 <title>The Ticker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -181,6 +182,20 @@
   .foot-bar b{color:var(--mast-ink); font-weight:600}
 
   .term{border-bottom:1px dotted var(--muted); cursor:help; text-decoration:none; color:inherit}
+
+  /* ── tools: the bond calculator (static markup, outside the refresh layers) ── */
+  .nav a.tool{color:var(--mast-ink); font-weight:600; display:inline-flex; align-items:center; gap:7px}
+  .nav a.tool::before{content:""; width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-bottom:7px solid #1fbf75}
+  .mast-cta{display:inline-flex; align-items:center; gap:8px; margin-top:10px; font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--mast); background:var(--mast-ink); border-radius:999px; padding:7px 14px; text-decoration:none}
+  .mast-cta:hover{background:#fff}
+  .mast-cta:focus-visible,.toolcard a:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
+  .toolcard{margin-top:14px; display:grid; grid-template-columns:1fr auto; gap:14px 24px; align-items:center; background:linear-gradient(160deg,var(--mast2) 0%,var(--mast) 70%); color:var(--mast-ink2); border-radius:var(--r); padding:20px 22px}
+  .toolcard .kicker{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--mast-ink2)}
+  .toolcard h3{margin:4px 0 6px; font-size:20px; font-weight:700; letter-spacing:-.01em; color:var(--mast-ink)}
+  .toolcard p{margin:0; font-size:13.5px; max-width:62ch}
+  .toolcard a{display:inline-flex; align-items:center; white-space:nowrap; font-weight:600; font-size:14px; color:var(--mast); background:var(--mast-ink); border-radius:8px; padding:11px 18px; text-decoration:none}
+  .toolcard a:hover{background:#fff}
+  @media (max-width:700px){ .toolcard{grid-template-columns:1fr} .toolcard a{justify-self:start} }
 </style>
 
 <!-- ═════════════ MASTHEAD ═════════════ -->
@@ -199,6 +214,7 @@
       <div class="tag">BANK OF TANZANIA · MARKET INTELLIGENCE</div>
       <div class="asof">Data as of <b id="asof">—</b></div>
       <div style="margin-top:3px" id="update-line">Auto-refreshed when BOT publishes new data</div>
+      <a class="mast-cta" data-tool href="https://kelvinlangley.github.io/The-Ticker/bond-calculator.html">Bond Calculator &rarr;</a>
     </div>
   </div>
   <div class="tape" aria-label="Key indicators ticker tape"><div class="tape-track" id="tape"></div></div>
@@ -206,6 +222,7 @@
 
 <nav class="nav" aria-label="Sections">
   <div class="nav-in">
+    <a class="tool" data-tool href="https://kelvinlangley.github.io/The-Ticker/bond-calculator.html">Bond Calculator</a>
     <a href="#policy">Policy Desk</a>
     <a href="#economy">Economy</a>
     <a href="#bonds">Bonds &amp; Yields</a>
@@ -221,6 +238,14 @@
   <section id="policy"></section>
   <section id="economy"></section>
   <section id="bonds"></section>
+  <aside class="toolcard" id="tool-bondcalc" aria-label="TZ Bond Calculator">
+    <div>
+      <div class="kicker">Tool &middot; free to use</div>
+      <h3>TZ Bond Calculator</h3>
+      <p>Turn a price into a yield, or a yield into a price, for any Bank of Tanzania Treasury bond. The bond list is built in. You get accrued interest, the settlement amount, duration and DV01, and a PDF valuation to keep.</p>
+    </div>
+    <a data-tool href="https://kelvinlangley.github.io/The-Ticker/bond-calculator.html">Open the calculator &rarr;</a>
+  </aside>
   <section id="tbills"></section>
   <section id="calendar"></section>
   <section id="market"></section>
@@ -232,6 +257,7 @@
     <div>
       <h4>About The Ticker</h4>
       <p style="margin:0">The Ticker condenses the Bank of Tanzania's public releases — MPC statements, auction results, the issuance calendar and monthly economic data — into one page, translated into plain language. Every figure links back to its official source. It is an educational summary, <b style="color:var(--mast-ink)">not investment advice</b>; always confirm against the official BOT publication before acting.</p>
+      <p style="margin:12px 0 0">Tools: <a data-tool href="https://kelvinlangley.github.io/The-Ticker/bond-calculator.html">TZ Bond Calculator</a> &mdash; price to yield and yield to price for any Treasury bond.</p>
       <div class="srcnote" id="foot-update">—</div>
     </div>
     <div>
@@ -248,8 +274,8 @@
    Every value must come from a Bank of Tanzania (or NBS) publication.
    ════════════════════════════════════════════════════════════════════ */
 const DATA = { /* INJECT-DATA */
-  asOf: "2026-09-10",
-  updateLine: "Auto-refreshed from BOT releases · last built 10 Sep 2026",
+  asOf: "2026-09-21",
+  updateLine: "Auto-refreshed from BOT releases · last built 21 Sep 2026",
   tape: [
     {label:"CBR", value:"6.25%", dir:"up"},
     {label:"REDISCOUNT", value:"8.75%", dir:"up"},
@@ -258,12 +284,12 @@ const DATA = { /* INJECT-DATA */
     {label:"364-DAY BILL", value:"6.474%", dir:"dn"},
     {label:"182-DAY BILL", value:"4.925%", dir:"dn"},
     {label:"2Y BOND", value:"8.403%", dir:"up"},
-    {label:"5Y BOND", value:"9.539%", dir:"dn"},
+    {label:"5Y BOND", value:"9.528%", dir:"dn"},
     {label:"10Y BOND", value:"10.692%", dir:"dn"},
     {label:"15Y BOND", value:"10.552%", dir:"up"},
     {label:"20Y BOND", value:"11.331%", dir:"up"},
     {label:"25Y BOND", value:"11.480%", dir:"dn"},
-    {label:"TZS/USD", value:"2,651.91", dir:"dn"},
+    {label:"TZS/USD", value:"2,654.34", dir:"dn"},
     {label:"IBCM 7-DAY", value:"6.41%", dir:"up"}
   ],
   sources: [
@@ -312,7 +338,7 @@ const DATA = { /* INJECT-DATA */
   ],
   yieldCurve: [
     {t:2, v:8.4033, note:"Auction No. 712, 29 Jul 2026 · 9.50% coupon · bids 3.9× the offer"},
-    {t:5, v:9.5385, note:"Auction No. 700, 29 Apr 2026 · 10.25% coupon · stalest point — no 5y auction since; next one 16 Sep"},
+    {t:5, v:9.5275, note:"Auction No. 700 re-opening, 16 Sep 2026 · 10.25% coupon · bids 2.8× the offer"},
     {t:10, v:10.6924, note:"Auction No. 711 re-opening, 2 Sep 2026 · 11.25% coupon · bids 2.5×"},
     {t:15, v:10.5515, note:"19 Aug 2026 re-opening of a high-coupon (12.25%) bond at a premium price — that is why 15y sits below 10y; an auction-timing effect, not a true inversion"},
     {t:20, v:11.3306, note:"Auction No. 710, 8 Jul 2026 · 12.25% coupon · bids 1.9×"},
@@ -329,8 +355,8 @@ const DATA = { /* INJECT-DATA */
       {t:"2026-03-04",v:8.3624,note:"Auction 697 · 9.5% coupon"},
       {t:"2026-07-29",v:8.4033,note:"Auction 712 · 9.5% coupon"}
      ]},
-    {y:5, name:"5-Year", coupon:"10.25%", way:9.5385, wap:"102.7520", date:"2026-04-29", auc:"No. 700", bid:"1.6×", prev:"10.5425% · 26 Nov 2025", isin:"TZ1996105965",
-     note:"No 5-year auction has been held since 29 April 2026, so this is the stalest point on the curve. The next 5-year re-opening is scheduled for 16 Sep 2026 — watch it for a fresh read on the belly of the curve.",
+    {y:5, name:"5-Year", coupon:"10.25%", way:9.5275, wap:"102.6275", date:"2026-09-16", auc:"No. 700 re-opening", bid:"2.8×", prev:"9.5385% · 29 Apr 2026", isin:"TZ1996105965",
+     note:"The 5-year returned to market on 16 September after a five-month gap, re-opening the same 10.25% coupon line from April. Investors bid TZS 397bn for the TZS 142.7bn on offer (2.8×), holding the yield essentially flat at 9.53% — a 1bp dip from April.",
      hist:[
       {t:"2024-10-16",v:12.409,note:"Auction 571 re-opening · 9.18% coupon"},
       {t:"2025-03-19",v:13.1445,note:"Auction 671 · 13% coupon"},
@@ -338,7 +364,8 @@ const DATA = { /* INJECT-DATA */
       {t:"2025-07-16",v:13.1814,note:"Auction 673 · 12.75% coupon"},
       {t:"2025-09-10",v:12.4838,note:"Auction 673 re-opening · 12.75% coupon"},
       {t:"2025-11-26",v:10.5425,note:"Auction 689 · 10.75% coupon"},
-      {t:"2026-04-29",v:9.5385,note:"Auction 700 · 10.25% coupon"}
+      {t:"2026-04-29",v:9.5385,note:"Auction 700 · 10.25% coupon"},
+      {t:"2026-09-16",v:9.5275,note:"Auction 700 re-opening · 10.25% coupon · bids 2.8× the offer"}
      ]},
     {y:10, name:"10-Year", coupon:"11.25%", way:10.6924, wap:"103.3267", date:"2026-09-02", auc:"No. 711 re-opening", bid:"2.5×", prev:"10.8747% · 22 Jul 2026", isin:"TZ1996106112",
      note:"The 10-year eased to 10.69% at the 2 September re-opening of the same 11.25% line — a partial retracement from July's 10.87%, though still well above April's 9.40% cycle low. Bids covered the offer 2.5×.",
@@ -432,10 +459,9 @@ const DATA = { /* INJECT-DATA */
     {t:"2025-12",v:2447.5},{t:"2026-01",v:2518.1},{t:"2026-02",v:2542.5},
     {t:"2026-03",v:2577.4},{t:"2026-04",v:2602},{t:"2026-05",v:2609.2},
     {t:"2026-06",v:2623.5},{t:"2026-07",v:2649.7},
-    {t:"2026-09-09",v:2651.91,note:"Latest BOT indicative selling rate (buying 2,625.65) — not end-of-month"}
+    {t:"2026-09-21",v:2654.34,note:"Latest BOT indicative selling rate (buying 2,628.06) — not end-of-month"}
   ],
   calendar: [
-    {date:"2026-09-16", what:"5-Year Treasury bond", m:"Re-opening · first 5-year supply since April — a fresh read on the belly of the curve"},
     {date:"2026-09-23", what:"Treasury bills — all four tenors", m:"New issue"},
     {date:"2026-09-30", what:"15-Year Treasury bond", m:"Re-opening · last auction on the published Q1 FY2026/27 calendar"}
   ]
@@ -946,9 +972,9 @@ function buildMarket(){
   secHead(sec,"Market Snapshot","The wider picture",
     'The backdrop every yield trades against: the shilling, the country’s FX buffers, and how fast money and credit are growing.');
   const g=el("div","grid c3"); sec.append(g);
-  tile(g,{label:"TZS / USD", value:"2,651.91", unit:"TZS", delta:"weaker y/y", dir:"up",
-    sub:"BOT selling rate · 9 Sep 2026 (buying 2,625.65)",
-    plain:"It takes 2,651.91 shillings to buy a dollar — about 9% more than a year ago. On this chart, up = weaker shilling.",
+  tile(g,{label:"TZS / USD", value:"2,654.34", unit:"TZS", delta:"weaker y/y", dir:"up",
+    sub:"BOT selling rate · 21 Sep 2026 (buying 2,628.06)",
+    plain:"It takes 2,654.34 shillings to buy a dollar — about 9% more than a year ago. On this chart, up = weaker shilling.",
     econ:"A weaker shilling makes imports (fuel, fertiliser) pricier — one of the channels behind the inflation climb.",
     mkt:"FX weakness pressures BOT to keep policy tight, which supports higher yields."});
   tile(g,{label:"FX reserves", value:"6.20", unit:"USD bn", delta:"4.8 months cover", dir:"up",
@@ -1014,3 +1040,10 @@ function buildGlossary(){
 
 render();
 </script>
+
+<script>
+/* TOOLS-LINKS — static, not part of the refresh layers: keep as is */
+document.querySelectorAll('a[data-tool]').forEach(function(a){ if(!/github\.io$/.test(location.hostname)){ a.target='_blank'; a.rel='noopener'; } });
+</script>
+
+</body></html>
