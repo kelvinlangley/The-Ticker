@@ -152,14 +152,28 @@ A companion **staff-only portal** for entering client bids in BOT auctions
   `ADMIN_EMAILS` the first time; after that, add or remove admin rows in
   the tab directly (no redeploy). Any other e-mail trying the admin portal
   sees "User not defined as admin — please contact the system admin for
-  configuration". **First sign-in**: each admin creates their own password
-  in the portal; the server stores it in the tab and generates a random
-  **4-digit Admin PIN** shown once — both are required at every sign-in.
+  configuration". **First sign-in**: the admin presses **"E-mail me a
+  verification code"** in the portal and a **6-digit code** is sent to
+  their address (proof they own the mailbox — without it, anyone who knew
+  a listed address could claim the account); with the code they create
+  their own password; the server stores it in the tab and generates a
+  random **4-digit Admin PIN** shown once — both are required at every
+  sign-in. Codes live 10 minutes, max 3 e-mails per address per hour
+  (15/hour across all addresses), 5 wrong codes invalidate it. A stream
+  of "Verification code e-mailed" entries in the AdminLog for someone who
+  is NOT signing up means an outsider is playing with the button — they
+  can never get in (the code only goes to the real mailbox), and as a
+  fallback the master admin can always type a starting password directly
+  into the person's Password cell. NOTE: e-mailing needs a one-time
+  permission, and the ORDER matters — after pasting a new script version,
+  FIRST Run `setup()` from the editor and approve the "Send email as you"
+  prompt, THEN Deploy → Manage deployments → ✏️ → New version (deploying
+  first leaves the portal refusing every request until you approve).
   Five wrong attempts lock the e-mail for 10 minutes — the lock clears by
   itself, or the master admin presses **Unlock now** in the portal's Login
   Activity tab to free the person immediately. **Reset**: clear the
-  person's Password cell; on their next sign-in they create a new password
-  and receive a new PIN. Passwords sit in the Sheet in clear text so the
+  person's Password cell; on their next sign-in they repeat the code +
+  new-password flow and receive a new PIN. Passwords sit in the Sheet in clear text so the
   main admin can help people — protect the Sheet itself accordingly.
 - **Auctions tab** — one row per auction (number, security, coupon, ISIN,
   dates, min bid, multiple, price band). The `Active` column is the admin
